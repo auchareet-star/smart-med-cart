@@ -15,7 +15,7 @@ function startClock() {
     el.textContent = [now.getHours(), now.getMinutes(), now.getSeconds()]
       .map(n => String(n).padStart(2, '0')).join(':');
     if (dt) dt.textContent =
-      `วัน${DAYS[now.getDay()]}ที่ ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear() + 543}`;
+      `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear() + 543}`;
   }
   tick();
   _clockTimer = setInterval(tick, 1000);
@@ -1573,7 +1573,7 @@ function moveDrawer(idx, dir) {
 /* ─── Admin login ───────────────────────────────────────────── */
 function logout() {
   MC_STATE.currentUser = null;
-  location.hash = '#pg-login';
+  location.hash = '#pg-cart';
 }
 
 /* ─── HIS Sync ──────────────────────────────────────────────── */
@@ -3941,7 +3941,6 @@ function renderDashActions() {
   const dispCount = (MC_STATE.orders||[]).filter(o=>isPatientInCurrentCart(o.patientId) && o.status==='PENDING').length;
   el.innerHTML = `
     <button type="button" class="action-card action-card-orange" onclick="startNormalFlow()">
-      ${refillCount > 0 ? `<span class="action-badge">${refillCount} รอจัด</span>` : ''}
       <div class="action-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
@@ -3949,13 +3948,11 @@ function renderDashActions() {
       </div>
       <div class="action-text">
         <div class="action-name">จัดยาเข้ารถเข็น</div>
-        <div class="action-eng">Medication Preparation</div>
-        <div class="action-cta">เริ่มจัดยา <span>›</span></div>
       </div>
+      ${refillCount > 0 ? `<span class="action-badge">${refillCount} รอจัด</span>` : ''}
     </button>
 
     <button type="button" class="action-card action-card-red" onclick="alert('Dispense — ดู flow ที่ Mode A/B')">
-      ${dispCount > 0 ? `<span class="action-badge action-badge-red">${dispCount} รอจ่าย</span>` : ''}
       <div class="action-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
@@ -3963,9 +3960,8 @@ function renderDashActions() {
       </div>
       <div class="action-text">
         <div class="action-name">จ่ายยาให้ผู้ป่วย</div>
-        <div class="action-eng">Medication Administration</div>
-        <div class="action-cta">เริ่มจ่ายยา <span>›</span></div>
       </div>
+      ${dispCount > 0 ? `<span class="action-badge action-badge-red">${dispCount} รอจ่าย</span>` : ''}
     </button>
 
     <button type="button" class="action-card action-card-pink" onclick="alert('PRN — coming soon')">
@@ -3976,8 +3972,6 @@ function renderDashActions() {
       </div>
       <div class="action-text">
         <div class="action-name">เติมยาสำรอง (PRN)</div>
-        <div class="action-eng">PRN Stock Preparation</div>
-        <div class="action-cta">เริ่มเติมยา <span>›</span></div>
       </div>
     </button>
 
