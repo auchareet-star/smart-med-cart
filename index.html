@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Medication Cart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app"></div>
+
+<button type="button" class="btn-reset-float" onclick="resetDemo()">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+  </svg>
+  Reset Demo
+</button>
+
+<!-- ══════════════════════════════════════════════════════════
+     GLOBAL PIN MODAL (Lock system)
+     ══════════════════════════════════════════════════════════ -->
+<div class="pin-modal" id="pinModal" hidden>
+  <div class="pin-modal-backdrop" onclick="closePinModal()"></div>
+  <div class="pin-modal-card">
+    <div class="pin-head">
+      <div class="pin-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+      </div>
+      <div>
+        <div class="pin-title">ยืนยันตัวตน</div>
+        <div class="pin-sub">ป้อน PIN 4 หลัก เพื่อปลดล็อค</div>
+      </div>
+    </div>
+
+    <div class="pin-target">กำลังขอเปิด: <b id="pinModalTarget">—</b></div>
+
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+    </div>
+    <input type="password" id="pinInput" maxlength="4" inputmode="numeric" autocomplete="off" pattern="[0-9]*" oninput="onPinInput()" onkeydown="onPinKey(event)" />
+
+    <div class="pin-error" id="pinError"></div>
+
+    <div class="pin-actions">
+      <button type="button" class="pin-btn-cancel" onclick="closePinModal()">ยกเลิก</button>
+      <button type="button" class="pin-btn-ok" id="pinSubmitBtn" onclick="submitPin()" disabled>ยืนยัน</button>
+    </div>
+
+    <div class="pin-hint" id="pinHint">
+      <div class="pin-hint-title">ผู้ใช้ในระบบ (demo)</div>
+      <div class="pin-hint-list" id="pinHintList"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Global slot detail modal (Zone 2) -->
+<div class="pack-modal" id="slotModal" hidden>
+  <div class="pack-modal-backdrop" onclick="closeSlotModal()"></div>
+  <div class="pack-modal-card">
+    <div class="pack-modal-head">
+      <div class="pack-modal-title">รายการในช่อง</div>
+      <button type="button" class="pack-modal-close" onclick="closeSlotModal()">×</button>
+    </div>
+    <div id="slotModalBody"></div>
+    <div class="pack-modal-actions">
+      <button type="button" class="mc-btn mc-btn-primary" onclick="closeSlotModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-CART
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-cart">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="3" width="14" height="14" rx="2"/>
+          <line x1="5" y1="8" x2="19" y2="8"/>
+          <line x1="5" y1="13" x2="19" y2="13"/>
+          <circle cx="8" cy="20" r="1.5"/>
+          <circle cx="16" cy="20" r="1.5"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">Smart Medication Cart</div>
+        <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+      </div>
+    </div>
+    <div class="nav-center">
+      <span class="tag tag-solid" id="cartNavHwId">MC-A-001</span>
+      <span class="tag tag-text" id="cartNavName">—</span>
+      <span class="tag tag-ghost tag-online">Online</span>
+    </div>
+    <div class="nav-clock">
+      <div class="clock-time" id="clock">--:--:--</div>
+      <div class="clock-date" id="dateTh"></div>
+    </div>
+    </div>
+  </nav>
+
+  <div class="cart-body">
+
+    <!-- LEFT: gradient panel with cart illustration -->
+    <div class="cart-image-wrap">
+      <svg class="cart-svg" viewBox="0 0 200 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- sparkles -->
+        <circle cx="30" cy="60" r="2" fill="#9ad9b9" opacity=".6"/>
+        <circle cx="165" cy="80" r="2.5" fill="#9ad9b9" opacity=".6"/>
+        <circle cx="175" cy="180" r="2" fill="#9ad9b9" opacity=".6"/>
+        <circle cx="25" cy="200" r="2" fill="#9ad9b9" opacity=".5"/>
+        <path d="M40 90 l3 0 M41.5 88.5 l0 3" stroke="#7bc9a3" stroke-width="1" stroke-linecap="round"/>
+        <path d="M160 140 l3 0 M161.5 138.5 l0 3" stroke="#7bc9a3" stroke-width="1" stroke-linecap="round"/>
+
+        <!-- cart body -->
+        <rect x="50" y="40" width="100" height="175" rx="14" fill="#ffffff" stroke="#2dbfa3" stroke-width="2.2"/>
+        <!-- handle -->
+        <rect x="70" y="52" width="60" height="10" rx="4" fill="#c7ebd9"/>
+        <rect x="78" y="55" width="30" height="4" rx="2" fill="#2dbfa3" opacity=".5"/>
+        <!-- drawers -->
+        <rect x="60" y="78"  width="80" height="26" rx="6" fill="#eaf8f0" stroke="#2dbfa3" stroke-width="1.3"/>
+        <rect x="90" y="89"  width="20" height="4"  rx="2" fill="#2dbfa3"/>
+        <rect x="60" y="112" width="80" height="26" rx="6" fill="#eaf8f0" stroke="#2dbfa3" stroke-width="1.3"/>
+        <rect x="90" y="123" width="20" height="4"  rx="2" fill="#2dbfa3"/>
+        <rect x="60" y="146" width="80" height="26" rx="6" fill="#eaf8f0" stroke="#2dbfa3" stroke-width="1.3"/>
+        <rect x="90" y="157" width="20" height="4"  rx="2" fill="#2dbfa3"/>
+        <rect x="60" y="180" width="80" height="26" rx="6" fill="#eaf8f0" stroke="#2dbfa3" stroke-width="1.3"/>
+        <rect x="90" y="191" width="20" height="4"  rx="2" fill="#2dbfa3"/>
+
+        <!-- legs -->
+        <line x1="72"  y1="215" x2="72"  y2="235" stroke="#2dbfa3" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="128" y1="215" x2="128" y2="235" stroke="#2dbfa3" stroke-width="2.2" stroke-linecap="round"/>
+
+        <!-- wheels -->
+        <circle cx="72"  cy="244" r="10" fill="#ffffff" stroke="#2dbfa3" stroke-width="2.2"/>
+        <circle cx="72"  cy="244" r="4"  fill="#2dbfa3"/>
+        <circle cx="128" cy="244" r="10" fill="#ffffff" stroke="#2dbfa3" stroke-width="2.2"/>
+        <circle cx="128" cy="244" r="4"  fill="#2dbfa3"/>
+      </svg>
+    </div>
+
+    <!-- RIGHT: content -->
+    <div class="cart-right">
+
+      <div class="cart-heading">
+        <div class="page-title">ข้อมูลรถเข็นยา</div>
+        <div class="page-sub">ตรวจสอบข้อมูลรถเข็นก่อนเริ่มใช้งานทุกครั้ง</div>
+      </div>
+
+      <!-- header card -->
+      <div class="cart-header-card">
+        <div class="cart-header-left">
+          <div class="cart-avatar" id="cartInfoAvatar">—</div>
+          <div>
+            <div class="cart-name" id="cartInfoName">—</div>
+            <div class="cart-meta">
+              <span id="cartInfoHwId">—</span><span class="sep">·</span>
+              <span>OmniRx Pro X2</span>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-ready">
+          <span class="btn-ready-dot"></span>พร้อมใช้งาน
+        </button>
+      </div>
+
+      <!-- stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/>
+            </svg>
+          </div>
+          <div class="stat-label">รถเข็น</div>
+          <div class="stat-value" id="cartInfoStatName">—</div>
+          <div class="stat-sub" id="cartInfoStatHw">—</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+            </svg>
+          </div>
+          <div class="stat-label">ใช้งานล่าสุด</div>
+          <div class="stat-value">วันนี้ 08:42</div>
+          <div class="stat-sub">นส.สมใจ ดีมาก</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap ic-amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="17" height="10" rx="2"/>
+              <path d="M22 11v2" stroke-width="2.5"/>
+              <path d="M13 9l-2 3h3l-2 3"/>
+            </svg>
+          </div>
+          <div class="stat-label">แบตเตอรี่ (กำลังชาร์จ)</div>
+          <div class="batt-row">
+            <div class="batt-track"><div class="batt-fill"></div></div>
+            <span class="batt-pct">85%</span>
+          </div>
+          <div class="stat-sub">ใช้งานได้ประมาณ 6 ชม. 48 นาที</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+              <circle cx="12" cy="6" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="12" cy="18" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <div class="stat-label">Drawer</div>
+          <div class="stat-value"><span id="cartInfoDrawerCount">—</span> <span class="stat-unit">ลิ้นชัก</span></div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+            </svg>
+          </div>
+          <div class="stat-label">Cassette พร้อม</div>
+          <div class="stat-value"><span id="cartInfoCassetteCount">—</span> <span class="stat-unit">ช่อง</span></div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12.5A9.97 9.97 0 0112 10c2.7 0 5.16 1.07 6.97 2.8"/>
+              <path d="M8.5 15.5A5.01 5.01 0 0112 14c1.36 0 2.6.55 3.5 1.43"/>
+              <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/>
+              <path d="M2 8.5A14.95 14.95 0 0112 5c3.84 0 7.35 1.45 9.99 3.83"/>
+            </svg>
+          </div>
+          <div class="stat-label">การเชื่อมต่อ</div>
+          <div class="wifi-name">Wi-Fi</div>
+          <div class="wifi-detail">-52 dBm · สัญญาณแรง</div>
+        </div>
+      </div>
+
+      <!-- ENV -->
+      <div class="env-section">
+        <div class="env-header">
+          <div>
+            <div class="env-title">สภาพแวดล้อม Drawer / Cassette</div>
+            <div class="env-updated">อัปเดตล่าสุด วันนี้ 08:42</div>
+          </div>
+          <div class="env-actions">
+            <span class="pill pill-green">ปกติ</span>
+            <button type="button" class="btn-toggle" id="toggleBtn" onclick="toggleEnv()">
+              แสดงรายละเอียด
+              <svg class="chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="avg-row">
+          <div class="avg-card">
+            <div class="avg-label">Drawer AVG</div>
+            <div class="avg-value">24.2°C</div>
+            <div class="avg-sub">ความชื้น 49% RH</div>
+          </div>
+          <div class="avg-card">
+            <div class="avg-label">Cassette AVG</div>
+            <div class="avg-value">24.5°C</div>
+            <div class="avg-sub">ความชื้น 50% RH · 36 ช่อง</div>
+          </div>
+        </div>
+
+        <div id="envDetails">
+          <div class="env-table-wrap">
+            <table class="env-table">
+              <thead>
+                <tr>
+                  <th>Drawer</th><th>Drawer Temp</th><th>Drawer RH</th>
+                  <th>Cassette Temp</th><th>Cassette RH</th><th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody id="drawerTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- actions -->
+      <div class="cart-actions">
+        <button type="button" class="btn-start" onclick="location.hash='#pg-confirm'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          เริ่มใช้งาน
+        </button>
+        <button type="button" class="btn-secondary" onclick="openAdminLogin()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+            Admin Console
+          </button>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+    <div class="footer-left">
+      <span>Med Cart v3.2.1</span>
+      <span class="footer-sep">·</span>
+      <span data-hw-id>MC-A-001</span>
+      <span class="footer-sep">·</span>
+      <div class="footer-batt">
+        <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+        <span>85%</span>
+      </div>
+    </div>
+    </div>
+  </footer>
+
+</div>
+</template>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-CONFIRM — ยืนยัน Ward
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-confirm">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Smart Medication Cart</div>
+        <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+      </div>
+    </div>
+    <div class="nav-center">
+      <span class="tag tag-solid" data-cart-shortid>A-1</span>
+      <span class="tag tag-text" data-ward-name>Ward 3A</span>
+      <span class="tag tag-ghost tag-online">Online</span>
+    </div>
+    <div class="nav-clock">
+      <div class="clock-time" id="clock">--:--:--</div>
+      <div class="clock-date" id="dateTh"></div>
+    </div>
+    </div>
+  </nav>
+
+  <div class="confirm-body">
+    <div class="confirm-top-card">
+      <div class="cart-header-left">
+        <div class="cart-avatar">A-1</div>
+        <div>
+          <div class="cart-name" data-cart-name>Med Cart A-1</div>
+          <div class="cart-meta">
+            รหัส <span data-hw-id>MC-A-001</span>
+          </div>
+        </div>
+      </div>
+      <div class="confirm-top-right">
+        <span class="pill pill-green" data-ward-name>Ward 3A</span>
+        <div class="last-used">ล่าสุด: วันนี้ 08:42 น.</div>
+      </div>
+    </div>
+
+    <div class="confirm-grid">
+      <div class="confirm-left">
+        <div class="current-ward-card">
+          <div class="ward-head">
+            <div class="ward-head-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/>
+              </svg>
+            </div>
+            <div>
+              <div class="ward-label">Ward ล่าสุดที่ใช้งาน</div>
+              <div class="ward-sub">รถเข็น A-1 ถูกใช้งานล่าสุดที่</div>
+            </div>
+          </div>
+
+          <div class="ward-big-card">
+            <div class="ward-big-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+            <div>
+              <div class="ward-big-name" data-ward-name>Ward 3A</div>
+              <div class="ward-big-sub" data-ward-dept-floor>หอผู้ป่วยอายุรกรรม · ชั้น 3 ตึก A</div>
+            </div>
+          </div>
+
+          <div class="ward-question">คุณต้องการใช้ Ward เดิมหรือเปลี่ยนไป Ward ใหม่?</div>
+        </div>
+
+        <div class="warning-box">
+          <div class="warning-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <div class="warning-title">สิ่งที่ควรทราบก่อนเปลี่ยน Ward</div>
+            <ul class="warning-list">
+              <li>ระบบจะรีเซ็ตข้อมูล session ของ Ward เดิม</li>
+              <li>รายชื่อผู้ป่วยและรายการยาค้างจะไม่ถูกนำมาใช้ต่อ</li>
+              <li>ข้อมูลที่บันทึกแล้วจะไม่ได้รับผลกระทบ</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirm-right">
+        <div class="option-card option-card-primary">
+          <div class="option-head">
+            <div class="option-icon option-icon-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <div>
+              <div class="option-title">ใช้ Ward เดิม</div>
+              <div class="option-sub" data-ward-full>Ward 3A — หอผู้ป่วยอายุรกรรม</div>
+            </div>
+          </div>
+          <div class="option-desc">ดำเนินการต่อด้วย Ward เดิมทันที โดยไม่ต้องเลือก Ward ใหม่</div>
+          <button type="button" class="btn-option-primary" onclick="location.hash='#pg-login'">
+            ดำเนินการต่อ
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div class="option-card">
+          <div class="option-head">
+            <div class="option-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/>
+                <path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
+              </svg>
+            </div>
+            <div>
+              <div class="option-title">เปลี่ยน Ward</div>
+              <div class="option-sub">เลือก Ward ใหม่สำหรับการใช้งานครั้งนี้</div>
+            </div>
+          </div>
+          <div class="option-desc">เลือก Ward อื่นจากรายการที่มี ระบบจะรีเซ็ต session เดิม</div>
+          <button type="button" class="btn-option-outline" onclick="location.hash='#pg-select-ward'">
+            เลือก Ward ใหม่
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+    <div class="footer-left">
+      <span>Med Cart v3.2.1</span>
+      <span class="footer-sep">·</span>
+      <span data-hw-id>MC-A-001</span>
+      <span class="footer-sep">·</span>
+      <div class="footer-batt">
+        <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+        <span>85%</span>
+      </div>
+    </div>
+    </div>
+  </footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-SELECT-WARD — เลือก Ward ใหม่
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-select-ward">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Smart Medication Cart</div>
+        <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+      </div>
+    </div>
+    <div class="nav-center">
+      <span class="tag tag-solid" data-cart-shortid>A-1</span>
+      <span class="tag tag-text" data-ward-name>Ward 3A</span>
+      <span class="tag tag-ghost tag-online">Online</span>
+    </div>
+    <div class="nav-clock">
+      <div class="clock-time" id="clock">--:--:--</div>
+      <div class="clock-date" id="dateTh"></div>
+    </div>
+    </div>
+  </nav>
+
+  <div class="ward-body">
+    <div class="ward-heading">
+      <div class="page-title">เลือก Ward ใหม่</div>
+      <div class="page-sub">เลือก Ward ที่ต้องการใช้งานกับรถเข็น <span data-cart-name>Med Cart A-1</span></div>
+    </div>
+
+    <div class="ward-top-row">
+      <div class="ward-top-info">
+        <div class="cart-avatar">A-1</div>
+        <div>
+          <div class="cart-name" data-cart-name>Med Cart A-1</div>
+          <div class="cart-meta">
+            <span>Ward ปัจจุบัน:</span>
+            <span class="pill pill-green" data-ward-name>Ward 3A</span>
+            <span class="sep">·</span>
+            <span data-ward-dept>หอผู้ป่วยอายุรกรรม</span>
+          </div>
+        </div>
+      </div>
+      <div class="ward-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="wardSearch" placeholder="ค้นหา Ward หรือแผนก..." oninput="filterWards(this.value)" autocomplete="off" />
+      </div>
+    </div>
+
+    <div class="ward-grid" id="wardGrid"></div>
+
+    <div class="ward-actions">
+      <button type="button" class="btn-ward-cancel" onclick="location.hash='#pg-confirm'">ยกเลิก</button>
+      <button type="button" class="btn-ward-confirm" id="confirmWardBtn" disabled onclick="confirmWardChange()">
+        ยืนยันการเปลี่ยน Ward
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+    <div class="footer-left">
+      <span>Med Cart v3.2.1</span>
+      <span class="footer-sep">·</span>
+      <span data-hw-id>MC-A-001</span>
+    </div>
+    </div>
+  </footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-LOGIN — Cart Authentication
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-login">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Smart Medication Cart</div>
+        <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+      </div>
+    </div>
+    <div class="nav-center">
+      <span class="tag tag-solid" data-cart-shortid>A-1</span>
+      <span class="tag tag-text" data-ward-name>Ward 3A</span>
+      <span class="tag tag-ghost tag-online">Online</span>
+    </div>
+    <div class="nav-clock">
+      <div class="clock-time" id="clock">--:--:--</div>
+      <div class="clock-date" id="dateTh"></div>
+    </div>
+    </div>
+  </nav>
+
+  <div class="login-body">
+    <div class="login-wrapper">
+      <!-- LEFT: gradient hero -->
+      <div class="login-hero">
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          <span>Secure Access</span>
+        </div>
+        <div class="hero-cart">
+          <svg class="cart-svg" viewBox="0 0 220 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="55" y="50" width="110" height="185" rx="16" fill="#ffffff"/>
+            <rect x="67" y="62" width="86" height="28" rx="6" fill="#0a3d35"/>
+            <rect x="73" y="68" width="36" height="4" rx="2" fill="#2dbfa3"/>
+            <rect x="73" y="77" width="22" height="3" rx="1.5" fill="#5ad4b8" opacity=".7"/>
+            <circle cx="142" cy="76" r="3" fill="#e8a951"/>
+            <rect x="62" y="98"  width="96" height="26" rx="6" fill="#e8f7f2" stroke="#2dbfa3" stroke-width="1.2"/>
+            <rect x="62" y="130" width="96" height="26" rx="6" fill="#e8f7f2" stroke="#2dbfa3" stroke-width="1.2"/>
+            <rect x="62" y="162" width="96" height="26" rx="6" fill="#fef3e4" stroke="#e8a951" stroke-width="1.2"/>
+            <rect x="62" y="194" width="96" height="26" rx="6" fill="#e8f7f2" stroke="#2dbfa3" stroke-width="1.2"/>
+            <line x1="75"  y1="235" x2="75"  y2="258" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="145" y1="235" x2="145" y2="258" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="75"  cy="266" r="11" fill="#0a3d35"/>
+            <circle cx="75"  cy="266" r="5"  fill="#2dbfa3"/>
+            <circle cx="145" cy="266" r="11" fill="#0a3d35"/>
+            <circle cx="145" cy="266" r="5"  fill="#2dbfa3"/>
+          </svg>
+        </div>
+        <div class="hero-title">ยินดีต้อนรับสู่<br/>Smart Medication Cart</div>
+        <div class="hero-sub">ระบบบริหารจัดการรถเข็นยาอัจฉริยะ เพื่อความปลอดภัยและแม่นยำในการให้ยาผู้ป่วย</div>
+        <ul class="hero-feat">
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>ยืนยันตัวตนหลายวิธี ปลอดภัยตามมาตรฐาน HIPAA</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>ตรวจสอบสภาพยาและอุณหภูมิแบบ real-time</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>บันทึกข้อมูลผู้ให้ยาทุกครั้งที่ใช้งาน</span>
+          </li>
+        </ul>
+        <div class="hero-footer">
+          <span>Med Cart v3.2.1</span>
+          <span class="footer-sep">·</span>
+          <span data-ward-name>Ward 3A</span>
+        </div>
+      </div>
+
+      <!-- RIGHT: auth form -->
+      <div class="login-card">
+        <div class="login-logo">
+          <div class="login-logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="3" width="14" height="14" rx="2"/>
+              <line x1="5" y1="8" x2="19" y2="8"/>
+              <line x1="5" y1="13" x2="19" y2="13"/>
+              <circle cx="8" cy="20" r="1.5"/>
+              <circle cx="16" cy="20" r="1.5"/>
+            </svg>
+          </div>
+          <div>
+            <div class="login-logo-name" data-cart-name>Med Cart A-1</div>
+            <div class="login-logo-sub"><span data-hw-id>MC-A-001</span> · <span data-ward-name>Ward 3A</span></div>
+          </div>
+        </div>
+
+        <div class="login-title">เข้าสู่ระบบ</div>
+        <div class="login-sub">เลือกวิธีการยืนยันตัวตนเพื่อเริ่มใช้งานรถเข็นยา</div>
+
+        <!-- Auth method tabs -->
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab active" data-method="password" onclick="switchAuthMethod('password')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+            <span>รหัสผ่าน</span>
+          </button>
+          <button type="button" class="auth-tab" data-method="card" onclick="switchAuthMethod('card')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+              <line x1="2" y1="10" x2="22" y2="10"/>
+              <line x1="6" y1="15" x2="10" y2="15"/>
+            </svg>
+            <span>สแกนบัตร</span>
+          </button>
+          <button type="button" class="auth-tab" data-method="face" onclick="switchAuthMethod('face')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="9" r="3"/>
+              <path d="M12 14c-3.5 0-6 2-6 4.5V20h12v-1.5C18 16 15.5 14 12 14z"/>
+              <path d="M4 7V5a1 1 0 011-1h2M20 7V5a1 1 0 00-1-1h-2M4 17v2a1 1 0 001 1h2M20 17v2a1 1 0 01-1 1h-2"/>
+            </svg>
+            <span>สแกนใบหน้า</span>
+          </button>
+        </div>
+
+        <!-- Password panel -->
+        <div class="auth-panel" id="authPanelPassword">
+          <form onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label class="form-label" for="username">รหัสพนักงาน</label>
+              <input class="form-input" type="text" id="username" placeholder="เช่น admin" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="password">รหัสผ่าน</label>
+              <div class="input-wrap">
+                <input class="form-input" type="password" id="password" placeholder="••••••••" />
+                <button type="button" class="btn-eye" onclick="togglePassword()">
+                  <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="demo-creds">
+              <div class="demo-creds-title">ทดสอบระบบ (Password: 1234)</div>
+              <div class="demo-creds-chips">
+                <button type="button" class="demo-chip" onclick="fillDemoUser('admin')">admin = พยาบาล</button>
+                <button type="button" class="demo-chip" onclick="fillDemoUser('admin_2')">admin_2 = เภสัชกร</button>
+                <button type="button" class="demo-chip" onclick="fillDemoUser('admin_3')">admin_3 = หัวหน้าเวร</button>
+              </div>
+            </div>
+            <button type="submit" class="btn-login">เข้าสู่ระบบ</button>
+          </form>
+        </div>
+
+        <!-- Card scan panel -->
+        <div class="auth-panel" id="authPanelCard" hidden>
+          <div class="scan-area scan-card">
+            <div class="scan-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+                <line x1="7" y1="15" x2="11" y2="15"/>
+              </svg>
+            </div>
+            <div class="scan-title">นำบัตรประจำตัวพนักงานสแกนที่เครื่อง</div>
+            <div class="scan-sub">รองรับ Barcode · QR Code · RFID</div>
+            <div class="scan-status">
+              <span class="scan-dot"></span>
+              <span class="scan-dot"></span>
+              <span class="scan-dot"></span>
+              <span>กำลังรอรับสัญญาณ...</span>
+            </div>
+          </div>
+          <button type="button" class="btn-login" onclick="handleLogin(event)">จำลองการสแกน</button>
+        </div>
+
+        <!-- Face scan panel -->
+        <div class="auth-panel" id="authPanelFace" hidden>
+          <div class="scan-area scan-face">
+            <div class="face-frame">
+              <svg viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="40" cy="32" r="10"/>
+                <path d="M22 62c0-8 8-13 18-13s18 5 18 13"/>
+              </svg>
+              <div class="face-corner face-corner-tl"></div>
+              <div class="face-corner face-corner-tr"></div>
+              <div class="face-corner face-corner-bl"></div>
+              <div class="face-corner face-corner-br"></div>
+              <div class="face-scanline"></div>
+            </div>
+            <div class="scan-title">วางใบหน้าให้อยู่ในกรอบ</div>
+            <div class="scan-sub">ระบบจะยืนยันตัวตนอัตโนมัติเมื่อตรวจพบใบหน้า</div>
+          </div>
+          <button type="button" class="btn-login" onclick="handleLogin(event)">เริ่มสแกนใบหน้า</button>
+        </div>
+
+        <div class="login-card-info">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          หากมีปัญหาในการเข้าสู่ระบบ กรุณาติดต่อ IT Support ของโรงพยาบาล
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+    <div class="footer-left">
+      <span>Med Cart v3.2.1</span>
+      <span class="footer-sep">·</span>
+      <span data-hw-id>MC-A-001</span>
+    </div>
+    </div>
+  </footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-LOAD-MODE — เลือกประเภทการจัดยา
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-load-mode">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">เลือกประเภทการจัดยา</div></div>
+    </div>
+    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body mc-body-narrow">
+    <!-- Page header -->
+    <div class="lm-page-head">
+      <button type="button" class="lm-back-btn" onclick="location.hash='#pg-dashboard'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        กลับ Dashboard
+      </button>
+      <div class="lm-page-head-body">
+        <div class="lm-page-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/>
+          </svg>
+        </div>
+        <div>
+          <div class="lm-page-title">ตั้งค่าการจัดยา</div>
+          <div class="lm-page-meta"><span data-cart-name>Med Cart A-1</span> · <span data-ward-name>Ward 3A</span> · เลือกประเภทและช่วงเวลา</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sections card -->
+    <div class="lm-card">
+
+      <!-- Section 1: ประเภท -->
+      <div class="lm-card-section">
+        <div class="lm-card-section-title">
+          <span class="lm-step-num">1</span>ประเภทการจัดยา
+        </div>
+
+        <button type="button" class="mode-option lm-type-row" data-group="type" data-value="patient" onclick="selectModeOption(this)">
+          <div class="lm-type-row-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="lm-type-row-text">
+            <div class="lm-type-row-name">ตามรายผู้ป่วย</div>
+            <div class="lm-type-row-desc">จัดยาเป็นชุดตามผู้ป่วยแต่ละราย</div>
+          </div>
+          <div class="lm-type-row-stat">5 ราย</div>
+          <div class="mode-option-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </button>
+
+        <button type="button" class="mode-option lm-type-row" data-group="type" data-value="drug" onclick="selectModeOption(this)">
+          <div class="lm-type-row-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.5 20.5l10-10a4.95 4.95 0 10-7-7l-10 10a4.95 4.95 0 107 7z"/><path d="M8.5 8.5l7 7"/>
+            </svg>
+          </div>
+          <div class="lm-type-row-text">
+            <div class="lm-type-row-name">ตามรายการยา</div>
+            <div class="lm-type-row-desc">จัดตามชนิดยา แยกแต่ละรายการ</div>
+          </div>
+          <div class="lm-type-row-stat">12 รายการ</div>
+          <div class="mode-option-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </button>
+      </div>
+
+      <div class="lm-divider"></div>
+
+      <!-- Section 2: ช่วงเวลา -->
+      <div class="lm-card-section">
+        <div class="lm-card-section-title">
+          <span class="lm-step-num">2</span>ช่วงเวลา
+        </div>
+
+        <div class="lm-period-row">
+          <button type="button" class="mode-option lm-period-btn" data-group="period" data-value="round" onclick="selectModeOption(this)">
+            <div class="lm-period-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+              </svg>
+            </div>
+            <div class="lm-period-text">
+              <div class="lm-period-name">ตามรอบเวลา</div>
+              <div class="lm-period-desc">จัดเฉพาะรอบที่เลือก</div>
+            </div>
+            <div class="mode-option-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </button>
+
+          <button type="button" class="mode-option lm-period-btn" data-group="period" data-value="allday" onclick="selectModeOption(this)">
+            <div class="lm-period-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>
+              </svg>
+            </div>
+            <div class="lm-period-text">
+              <div class="lm-period-name">ทั้งวัน</div>
+              <div class="lm-period-desc">รวมทุกรอบในวันนี้</div>
+            </div>
+            <div class="mode-option-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </button>
+        </div>
+
+        <!-- Round pills -->
+        <div class="mode-round-pills" id="modeRoundPills" hidden>
+          <div class="lm-round-label">เลือกรอบเวลา</div>
+          <div class="round-pill-row">
+            <button type="button" class="round-pill" data-round="เช้า"     onclick="selectRound('เช้า')">เช้า · 08:00</button>
+            <button type="button" class="round-pill" data-round="กลางวัน" onclick="selectRound('กลางวัน')">กลางวัน · 12:00</button>
+            <button type="button" class="round-pill" data-round="เย็น"     onclick="selectRound('เย็น')">เย็น · 16:00</button>
+            <button type="button" class="round-pill" data-round="ก่อนนอน" onclick="selectRound('ก่อนนอน')">ก่อนนอน · 20:00</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <button type="button" class="mc-btn mc-btn-accent mode-next-btn" id="modeNextBtn" disabled onclick="proceedLoadMode()">
+      ถัดไป
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span><span class="footer-sep">·</span><div class="footer-batt"><div class="mini-batt"><div class="mini-batt-fill"></div></div><span>85%</span></div></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-dashboard'">ยกเลิก</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-SESSION-CONFIG — Pharmacist override
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-session-config">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">ปรับ Config รอบนี้</div></div>
+    </div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body">
+    <div class="mc-back-row">
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-mode'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Session Setup</button>
+    </div>
+    <div class="mc-top">
+      <div>
+        <div class="mc-title">ปรับรายละเอียดก่อนเริ่ม</div>
+        <div class="mc-sub" id="sessionCfgSub">—</div>
+      </div>
+      <button type="button" class="mc-btn mc-btn-outline" onclick="resetSessionConfig()">รีเซ็ต</button>
+    </div>
+    <div id="sessionCfgRoot"></div>
+    <button type="button" class="mc-btn mc-btn-primary" onclick="confirmSessionConfig()">ยืนยัน Config และกลับไป Session Setup →</button>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-load-mode'">เสร็จสิ้น</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-ADMIN-CARTS (CFG-1) — รายการรถเข็น
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-admin-carts">
+<div class="page page-admin">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon brand-icon-admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+      <div><div class="brand-name">Admin Console</div><div class="brand-sub">ตั้งค่ารถเข็น + Template</div></div>
+    </div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body mc-body-wide">
+    <div class="mc-back-row" style="justify-content:space-between;align-items:center;">
+      <button type="button" class="mc-back-btn" onclick="exitAdmin()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        ออกจากโหมด Admin
+      </button>
+      <button type="button" class="btn-footer-admin" id="adminSaveBtn" onclick="saveAdminConfig()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        บันทึก
+      </button>
+    </div>
+
+    <!-- Config Drawer: current cart -->
+    <div class="admin-section admin-section--featured">
+      <div class="admin-section-featured-tag">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>
+        ใช้งานอยู่
+      </div>
+      <div class="admin-section-head">
+        <div>
+          <div class="admin-section-title admin-section-title--featured">Config Drawer · รถเข็นปัจจุบัน</div>
+          <div class="admin-section-sub">เลือกรถเข็นที่จับคู่กับเครื่องนี้</div>
+        </div>
+        <button type="button" class="mc-btn mc-btn-primary" onclick="saveCartPairing()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          บันทึก
+        </button>
+      </div>
+      <div class="cfg-cart-bar" id="cfgCartBar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2" stroke-width="2.5"/></svg>
+        <span id="cfgBarHwId">MC-A-001</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-3)"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        <select id="cfgBarCartName" class="cfg-cart-select" onchange="cfgSelectCart(this.value)"></select>
+      </div>
+      <div class="cfg-tmpl-readonly" id="cfgTmplReadonly"></div>
+    </div>
+
+    <hr class="admin-divider"/>
+
+    <!-- Flow guide -->
+    <div class="admin-flow">
+      <div class="admin-flow-step">
+        <div class="admin-flow-num">1</div>
+        <div class="admin-flow-text">
+          <div class="admin-flow-title">สร้าง Template</div>
+          <div class="admin-flow-sub">กำหนดโครงสร้างลิ้นชัก + Cassette</div>
+        </div>
+      </div>
+      <div class="admin-flow-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <div class="admin-flow-step">
+        <div class="admin-flow-num">2</div>
+        <div class="admin-flow-text">
+          <div class="admin-flow-title">เพิ่มรถเข็น</div>
+          <div class="admin-flow-sub">ลงทะเบียนรถเข็น + กำหนด Template</div>
+        </div>
+      </div>
+      <div class="admin-flow-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <div class="admin-flow-step">
+        <div class="admin-flow-num">3</div>
+        <div class="admin-flow-text">
+          <div class="admin-flow-title">ตรวจสอบ HIS</div>
+          <div class="admin-flow-sub">ยืนยันการเชื่อมต่อระบบโรงพยาบาล</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 1: HIS -->
+    <div class="admin-section">
+      <div class="admin-section-head">
+        <div>
+          <div class="admin-section-title">
+            <span class="admin-step-badge">1</span>
+            การเชื่อมต่อ HIS
+          </div>
+          <div class="admin-section-sub">ตรวจสอบสถานะการรับคำสั่งยาจากระบบโรงพยาบาล</div>
+        </div>
+      </div>
+      <div class="his-panel" id="hisPanel"></div>
+    </div>
+
+    <!-- Step 2: Carts -->
+    <div class="admin-section">
+      <div class="admin-section-head">
+        <div>
+          <div class="admin-section-title">
+            <span class="admin-step-badge">2</span>
+            รถเข็นทั้งหมด
+          </div>
+          <div class="admin-section-sub">ลงทะเบียนรถเข็น แล้วเลือก Template ที่สร้างไว้</div>
+        </div>
+        <button type="button" class="mc-btn mc-btn-primary" onclick="newCart()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          เพิ่มรถเข็น
+        </button>
+      </div>
+      <div class="cart-grid" id="cartList"></div>
+    </div>
+
+    <!-- Step 3: Templates -->
+    <div class="admin-section">
+      <div class="admin-section-head">
+        <div>
+          <div class="admin-section-title">
+            <span class="admin-step-badge">3</span>
+            Templates
+          </div>
+          <div class="admin-section-sub">สร้าง Template ก่อน แล้วค่อยนำไปกำหนดให้รถเข็น</div>
+        </div>
+        <button type="button" class="mc-btn mc-btn-primary" onclick="newTemplate()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          เพิ่ม Template
+        </button>
+      </div>
+      <div class="tmpl-list" id="tmplList"></div>
+    </div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span>Admin Mode</span></div>
+    <button type="button" class="btn-reset" onclick="exitAdmin()">ยกเลิก</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-ADMIN-CART-EDIT (CFG-2)
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-admin-cart-edit">
+<div class="page page-admin">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon brand-icon-admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+      <div><div class="brand-name">Admin Console</div><div class="brand-sub">แก้ไขรถเข็น</div></div>
+    </div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body mc-body-wide">
+    <div class="mc-back-row">
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-admin-carts'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> รายการรถเข็น</button>
+    </div>
+    <div class="mc-top"><div>
+      <div class="mc-title">แก้ไขรถเข็น</div>
+      <div class="mc-sub">เปลี่ยนชื่อ ward และ template</div>
+    </div></div>
+    <div id="cartEditRoot"></div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span>Admin Mode</span></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-admin-carts'">เสร็จสิ้น</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-ADMIN-TEMPLATE (CFG-3) — Template Editor + Drawer Builder
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-admin-template">
+<div class="page page-admin">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon brand-icon-admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+      <div><div class="brand-name">Admin Console</div><div class="brand-sub">Template Editor</div></div>
+    </div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body">
+    <div class="mc-back-row">
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-admin-carts'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Admin</button>
+    </div>
+    <div class="mc-top"><div>
+      <div class="mc-title">แก้ไข Template</div>
+      <div class="mc-sub">กำหนดโครงสร้าง Drawer ของรถเข็น (ใช้ซ้ำได้หลายคัน)</div>
+    </div></div>
+    <div id="templateEditRoot"></div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span>Admin Mode</span></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-admin-carts'">ยกเลิก</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-ZONE2 — ช่องแพ็คผู้ป่วย (Drawer 6)
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-zone2">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">ช่องแพ็คผู้ป่วย</div></div>
+    </div>
+    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body mc-body-narrow">
+    <div class="mc-back-row">
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-mode'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        ย้อนกลับ
+      </button>
+      <div class="session-bar" id="sessionBar"></div>
+    </div>
+
+    <div class="mc-top">
+      <div>
+        <div class="mc-title">ช่องแพ็คยาผู้ป่วย</div>
+        <div class="mc-sub">ลิ้นชัก 6 · 9 ช่อง (3×3)</div>
+      </div>
+    </div>
+
+    <div class="drawer-lock-card" id="zone2LockCard"></div>
+
+    <div class="zone2-grid" id="zone2Grid"></div>
+
+    <div class="zone2-legend">
+      <span class="z2-legend-item"><span class="z2-dot z2-dot-empty"></span>ว่าง</span>
+      <span class="z2-legend-item"><span class="z2-dot z2-dot-assigned"></span>พร้อมจัด</span>
+      <span class="z2-legend-item"><span class="z2-dot z2-dot-in_progress"></span>กำลังจัด</span>
+      <span class="z2-legend-item"><span class="z2-dot z2-dot-packed"></span>แพ็คแล้ว</span>
+    </div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-load-mode'">ยกเลิกรอบนี้</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-PATIENT-QUEUE (A1) — Mode A: จัดตามรายผู้ป่วย
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-patient-queue">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">จัดยา — ตามรายผู้ป่วย</div></div>
+    </div>
+    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body pq-body">
+    <div class="mc-back-row">
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-mode'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        เลือกประเภท
+      </button>
+      <div class="session-bar" id="sessionBar"></div>
+    </div>
+
+    <div class="pq-header">
+      <div>
+        <div class="mc-title">คิวผู้ป่วยที่ต้องจัดยา</div>
+        <div class="mc-sub">เลือกผู้ป่วยเพื่อเริ่มจัดยา</div>
+      </div>
+      <div class="patient-progress" id="patientProgress">
+        <div class="prog-row">
+          <span class="prog-label">ความคืบหน้า</span>
+          <span class="prog-count"><b data-done>0</b>/<b data-total>0</b> คน</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="pq-toolbar">
+      <div class="pq-search-wrap">
+        <svg class="pq-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="search" class="pq-search-input" id="pqSearch" placeholder="ค้นหาชื่อ เตียง หรือโรค..." oninput="filterPatientQueue()">
+      </div>
+      <div class="pq-filters">
+        <button type="button" class="pq-filter-btn active" data-f="ALL"         onclick="setPqFilter('ALL')">ทั้งหมด</button>
+        <button type="button" class="pq-filter-btn"        data-f="PENDING"      onclick="setPqFilter('PENDING')">รอดำเนินการ</button>
+        <button type="button" class="pq-filter-btn"        data-f="IN_PROGRESS"  onclick="setPqFilter('IN_PROGRESS')">กำลังจัด</button>
+        <button type="button" class="pq-filter-btn"        data-f="DONE"         onclick="setPqFilter('DONE')">เสร็จสิ้น</button>
+      </div>
+    </div>
+    <div class="pq-result-count" id="pqResultCount"></div>
+
+    <div class="patient-list" id="patientList"></div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-load-mode'">ยกเลิกรอบนี้</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-PATIENT-DETAIL (A2) — จัดยาให้ผู้ป่วย
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-patient-detail">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">จัดยาให้ผู้ป่วย</div></div>
+    </div>
+    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body">
+    <div class="mc-back-row">
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-patient-queue'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> รายชื่อผู้ป่วย</button>
+      <div class="session-bar" id="sessionBar"></div>
+    </div>
+
+    <div class="pt-detail-head">
+      <div class="patient-avatar" id="patientDetailBed">—</div>
+      <div>
+        <div class="mc-title" id="patientDetailName">—</div>
+        <div class="mc-sub" id="patientDetailMeta"></div>
+      </div>
+    </div>
+
+    <div class="order-list" id="patientOrderList"></div>
+
+    <button type="button" class="mc-btn mc-btn-primary pack-btn" id="packBtn" disabled onclick="openPackModal()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16l4-4-4-4M20 12H6"/><path d="M14 6V4a2 2 0 00-2-2H6a2 2 0 00-2 2v16a2 2 0 002 2h6a2 2 0 002-2v-2"/></svg>
+      แพ็คถุงและบันทึกข้อมูล
+    </button>
+  </div>
+
+  <!-- Pack confirm modal -->
+  <div class="pack-modal" id="packModal" hidden>
+    <div class="pack-modal-backdrop" onclick="closePackModal()"></div>
+    <div class="pack-modal-card">
+      <div class="pack-modal-head">
+        <div class="pack-modal-title">ยืนยันการแพ็คถุง</div>
+        <button type="button" class="pack-modal-close" onclick="closePackModal()">×</button>
+      </div>
+      <div id="packModalBody"></div>
+      <div class="pack-modal-actions">
+        <button type="button" class="mc-btn mc-btn-outline" onclick="closePackModal()">ยกเลิก</button>
+        <button type="button" class="mc-btn mc-btn-primary" onclick="confirmPack()">ยืนยัน — พิมพ์สลาก ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-patient-queue'">กลับคิว</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-DRUG-QUEUE (B1) — Mode B: จัดตามรายการยา
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-drug-queue">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">จัดยา — ตามรายการยา</div></div>
+    </div>
+    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body dq-body">
+    <div class="mc-back-row">
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-mode'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        เลือกประเภท
+      </button>
+      <div class="session-bar" id="sessionBar"></div>
+    </div>
+
+    <div class="pq-header">
+      <div>
+        <div class="mc-title">คิวรายการยา</div>
+        <div class="mc-sub">เลือกยาเพื่อจัดให้ผู้ป่วย</div>
+      </div>
+      <div class="patient-progress" id="drugProgress">
+        <div class="prog-row">
+          <span class="prog-label">ความคืบหน้า</span>
+          <span class="prog-count"><b data-done>0</b>/<b data-total>0</b></span>
+        </div>
+        <div class="prog-track"><div class="prog-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="drug-list" id="drugList"></div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-load-mode'">ยกเลิกรอบนี้</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-DRUG-DETAIL (B2) — จ่ายยาต่อ drug
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-drug-detail">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">จ่ายยา — รายการ</div></div>
+    </div>
+    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body">
+    <div class="mc-back-row">
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-drug-queue'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> รายการยา</button>
+      <div class="session-bar" id="sessionBar"></div>
+    </div>
+
+    <div class="drug-detail-head">
+      <div>
+        <div class="mc-title" id="drugDetailName">—</div>
+        <div class="mc-sub"><span id="drugDetailLoc">—</span></div>
+      </div>
+    </div>
+
+    <div class="drug-stats">
+      <div class="drug-stat"><div class="drug-stat-label">มีใน Cassette</div><div class="drug-stat-val" id="drugDetailAvail">0</div></div>
+      <div class="drug-stat"><div class="drug-stat-label">ต้องจ่ายรวม</div><div class="drug-stat-val" id="drugDetailNeed">0</div></div>
+    </div>
+
+    <div id="drugDetailTable"></div>
+
+    <div class="drug-actions">
+      <button type="button" class="mc-btn mc-btn-primary" id="drugPickAllBtn" onclick="pickAllForDrug()">หยิบยาทั้งหมด</button>
+      <button type="button" class="mc-btn mc-btn-outline" id="drugSkipBtn" onclick="skipAllForDrug()">ข้ามทั้งรายการ</button>
+    </div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-drug-queue'">กลับคิว</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-SESSION-SUMMARY (A3/B3)
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-session-summary">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">สรุปรอบจัดยา</div></div>
+    </div>
+    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body mc-body-narrow">
+    <div class="mc-back-row">
+      <div class="session-bar" id="sessionBar"></div>
+    </div>
+    <div id="summaryRoot"></div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span></div>
+    <button type="button" class="btn-reset" onclick="closeSession()">ปิดรอบ</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-LOAD-MEDS — Dashboard จัดยาเข้ารถเข็น
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-load-meds">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="3" width="14" height="14" rx="2"/>
+          <line x1="5" y1="8" x2="19" y2="8"/>
+          <line x1="5" y1="13" x2="19" y2="13"/>
+          <circle cx="8" cy="20" r="1.5"/>
+          <circle cx="16" cy="20" r="1.5"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">Smart Medication Cart</div>
+        <div class="brand-sub">จัดยาเข้ารถเข็น</div>
+      </div>
+    </div>
+    <div class="nav-center">
+      <span class="tag tag-solid" data-cart-shortid>A-1</span>
+      <span class="tag tag-text" data-ward-name>Ward 3A</span>
+      <span class="tag tag-ghost tag-online">Online</span>
+    </div>
+    <div class="nav-clock">
+      <div class="clock-time" id="clock">--:--:--</div>
+      <div class="clock-date" id="dateTh"></div>
+    </div>
+    </div>
+  </nav>
+
+  <div class="mc-body">
+
+    <div class="mc-top">
+      <div>
+        <div class="mc-title">จัดยาเข้ารถเข็น</div>
+        <div class="mc-sub">
+          <span data-cart-name>Med Cart A-1</span>
+          <span class="sep">·</span>
+          <span>เวรเช้า</span>
+          <span class="sep">·</span>
+          <span>ภก.สมชาย</span>
+        </div>
+      </div>
+      <div class="mc-out-badge" id="outBadge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        </svg>
+        <span>Cassette ออก <b data-out>0</b></span>
+      </div>
+    </div>
+
+    <div class="mc-alert" id="mcAlert" hidden>
+      <div class="mc-alert-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div class="mc-alert-text">
+        <div class="mc-alert-title">พบ Cassette ค้างนอกเกิน 30 นาที</div>
+        <div class="mc-alert-sub" data-alert-sub>—</div>
+      </div>
+    </div>
+
+    <div class="drawer-grid" id="drawerGrid"></div>
+
+    <div class="mc-actions">
+      <button type="button" class="mc-btn mc-btn-primary" onclick="startRefillFirstOut()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M2 12h20"/>
+        </svg>
+        เติมยา (Refill)
+      </button>
+      <button type="button" class="mc-btn mc-btn-outline" onclick="openAdminLogin()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        Config ยา
+      </button>
+      <button type="button" class="mc-btn mc-btn-outline" onclick="location.hash='#pg-audit'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/>
+        </svg>
+        ประวัติ
+      </button>
+    </div>
+
+  </div>
+
+  <div class="mc-statusbar" id="mcStatusBar">
+    <span>ทั้งหมด <b data-total>0</b></span>
+    <span class="sep">·</span>
+    <span class="in-stat">เข้า <b data-in>0</b></span>
+    <span class="sep">·</span>
+    <span class="out-stat">ออก <b data-out-bar>0</b></span>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+    <div class="footer-left">
+      <span>Med Cart v3.2.1</span>
+      <span class="footer-sep">·</span>
+      <span data-hw-id>MC-A-001</span>
+      <span class="footer-sep">·</span>
+      <div class="footer-batt">
+        <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+        <span>85%</span>
+      </div>
+    </div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-dashboard'">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 5l-7 7 7 7"/>
+      </svg>
+      กลับ Dashboard
+    </button>
+    </div>
+  </footer>
+
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-DRAWER-DETAIL
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-drawer-detail">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">รายละเอียดลิ้นชัก</div></div>
+    </div>
+    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body">
+    <div class="mc-back-row">
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-meds'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Dashboard
+      </button>
+    </div>
+    <div class="mc-top">
+      <div>
+        <div class="mc-title" id="drawerDetailName">ลิ้นชัก</div>
+        <div class="mc-sub" id="drawerDetailSub">—</div>
+      </div>
+      <button type="button" class="mc-btn mc-btn-primary" onclick="refillDrawerFirst()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>
+        เติมยา Drawer นี้
+      </button>
+    </div>
+    <div class="drawer-lock-card" id="drawerLockCard"></div>
+    <div class="slot-list" id="slotList"></div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span><span class="footer-sep">·</span><div class="footer-batt"><div class="mini-batt"><div class="mini-batt-fill"></div></div><span>85%</span></div></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-load-meds'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>กลับ Dashboard</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-REFILL (3-step wizard)
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-refill">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">เติมยาเข้า Cassette</div></div>
+    </div>
+    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body mc-body-narrow" id="refillRoot"></div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-load-meds'">ยกเลิก</button>
+  </div></footer>
+</div>
+</template>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-AUDIT
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-audit">
+<div class="page">
+  <nav class="topnav"><div class="topnav-inner">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">ประวัติการใช้งาน</div></div>
+    </div>
+    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
+    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
+  </div></nav>
+
+  <div class="mc-body">
+    <div class="mc-back-row">
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-meds'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Dashboard</button>
+    </div>
+    <div class="mc-top">
+      <div>
+        <div class="mc-title">ประวัติการใช้งาน</div>
+        <div class="mc-sub">บันทึกการถอด/เติม/ใส่กลับ Cassette ทั้งหมด</div>
+      </div>
+    </div>
+
+    <div class="audit-filter">
+      <button type="button" class="audit-filter-btn active" data-filter="ALL"    onclick="setAuditFilter('ALL')">ทั้งหมด</button>
+      <button type="button" class="audit-filter-btn"        data-filter="ZONE1"  onclick="setAuditFilter('ZONE1')">ลิ้นชัก</button>
+      <button type="button" class="audit-filter-btn"        data-filter="ZONE2"  onclick="setAuditFilter('ZONE2')">ช่องผู้ป่วย</button>
+      <button type="button" class="audit-filter-btn"        data-filter="LOCK"   onclick="setAuditFilter('LOCK')">Lock</button>
+      <button type="button" class="audit-filter-btn"        data-filter="HIS"    onclick="setAuditFilter('HIS')">HIS</button>
+      <button type="button" class="audit-filter-btn audit-filter-alert" data-filter="ALERTS" onclick="setAuditFilter('ALERTS')">⚠ Alerts</button>
+    </div>
+
+    <div class="audit-list" id="auditList"></div>
+  </div>
+
+  <footer class="footer"><div class="footer-inner">
+    <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span data-hw-id>MC-A-001</span></div>
+    <button type="button" class="btn-reset" onclick="location.hash='#pg-load-meds'">กลับ Dashboard</button>
+  </div></footer>
+</div>
+</template>
+
+<!-- ══════════════════════════════════════════════════════════
+     PG-DASHBOARD — หลังล็อกอิน
+     ══════════════════════════════════════════════════════════ -->
+<template id="pg-dashboard">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <!-- Brand -->
+      <div class="topnav-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="3" width="14" height="14" rx="2"/>
+            <line x1="5" y1="8" x2="19" y2="8"/>
+            <line x1="5" y1="13" x2="19" y2="13"/>
+            <circle cx="8" cy="20" r="1.5"/>
+            <circle cx="16" cy="20" r="1.5"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+        </div>
+      </div>
+
+      <!-- Center context pill -->
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A01</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+
+      <!-- Right group -->
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+        <div class="nav-sep"></div>
+        <button type="button" class="btn-logout" onclick="logout()" title="ออกจากระบบ">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          ออกจากระบบ
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-body">
+    <!-- Hero banner (full width) -->
+    <div class="dash-hero" id="dashHero"></div>
+
+    <!-- 2-column: sidebar left + main right -->
+    <div class="dash-page-grid">
+
+      <!-- Sidebar -->
+      <aside class="dash-sidebar-col">
+        <div class="dash-sidebar-header">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+          แผงควบคุม
+        </div>
+        <div class="dash-section-label">ทางลัด</div>
+        <div class="dash-actions-grid" id="dashActions"></div>
+        <div id="dashFocus"></div>
+      </aside>
+
+      <!-- Main content -->
+      <div class="dash-main-col">
+        <!-- KPI stats row — same width as panels below -->
+        <div class="dash-stats-grid" id="dashStatsGrid"></div>
+        <div class="inv-section" id="dashInventory"></div>
+        <div class="dash-panel" hidden>
+          <div class="dash-panel-header">
+            <div class="dash-panel-title">
+              <div class="dash-panel-icon dash-panel-icon-teal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              รอบยาวันนี้
+            </div>
+            <span class="dash-link-info" id="dashRoundsInfo">—</span>
+          </div>
+          <div class="dash-rounds" id="dashRounds"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+    <div class="footer-left">
+      <span>Med Cart v3.2.1</span>
+      <span class="footer-sep">·</span>
+      <span data-hw-id>MC-A-001</span>
+      <span class="footer-sep">·</span>
+      <div class="footer-batt">
+        <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+        <span>85%</span>
+      </div>
+    </div>
+    </div>
+  </footer>
+
+</div>
+</template>
+
+
+
+<script src="script.js"></script>
+<script>
+  function render(hash) {
+    const id  = hash.replace('#', '') || 'pg-cart';
+    const tpl = document.getElementById(id);
+    const app = document.getElementById('app');
+    app.innerHTML = '';
+    if (!tpl) {
+      app.innerHTML = `<p style="padding:40px;color:#6b7280;">ไม่พบหน้า: ${id}</p>`;
+      return;
+    }
+    app.appendChild(tpl.content.cloneNode(true));
+    initPage();
+  }
+  window.addEventListener('hashchange', () => {
+    if (typeof saveNavState === 'function') saveNavState();
+    render(location.hash);
+  });
+  render(location.hash || '#pg-cart');
+</script>
+</body>
+</html>
