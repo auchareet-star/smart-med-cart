@@ -79,6 +79,97 @@
   </div>
 </div>
 
+<!-- Cart Detail Modal -->
+<div id="cartDetailModal" class="cdm-overlay" hidden onclick="if(event.target===this)closeCartDetail()">
+  <div class="cdm-panel">
+    <div class="cdm-header">
+      <div class="cdm-title">รายละเอียดรถเข็น</div>
+      <button type="button" class="cdm-close" onclick="closeCartDetail()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="cdm-body" id="cartDetailBody"></div>
+  </div>
+</div>
+
+<!-- Add Cart Modal (multi-step: device list → form) -->
+<div id="addCartModal" class="acm-overlay" hidden onclick="if(event.target===this)closeAddCartModal()">
+  <div class="acm-dialog">
+    <div class="acm-header">
+      <div>
+        <div class="acm-title" id="acmTitle">เพิ่มรถเข็นใหม่</div>
+        <div class="acm-sub" id="acmSub">เลือก Device ที่รอยืนยัน</div>
+      </div>
+      <button type="button" class="acm-close" onclick="closeAddCartModal()" title="ปิด (ESC)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Step 1: pending device list + manual key -->
+    <div id="acmStep1">
+      <div id="acmDeviceList" class="acm-device-list"></div>
+
+      <div class="acm-manual-divider">
+        <span>หรือ</span>
+      </div>
+      <button type="button" class="acm-manual-toggle" id="acmManualToggle" onclick="toggleManualKeyForm()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        เพิ่ม Key ด้วยตนเอง
+      </button>
+
+      <form id="acmManualForm" class="acm-manual-form" hidden onsubmit="submitManualKey(event)">
+        <div class="form-group">
+          <label class="form-label">MAC Address <span class="acm-req">*</span></label>
+          <input class="form-input form-input-mono" type="text" id="manualMac" placeholder="เช่น AA:BB:CC:DD:EE:FF" autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Secret Key <span class="acm-req">*</span></label>
+          <input class="form-input form-input-mono" type="text" id="manualKey" placeholder="เช่น MC-KEY-XXXX-XXXX" autocomplete="off" />
+          <div class="acm-field-error" id="manualKeyError"></div>
+        </div>
+        <div class="acm-manual-actions">
+          <button type="button" class="acm-btn-back" onclick="toggleManualKeyForm()">ยกเลิก</button>
+          <button type="submit" class="acm-btn-confirm">ยืนยัน Key</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Step 2: cart details form -->
+    <div id="acmStep2" hidden>
+      <div id="acmSelectedDevice"></div>
+      <form id="addCartForm" onsubmit="submitAddCart(event)">
+        <div class="form-group">
+          <label class="form-label">ชื่อรถเข็น <span class="acm-req">*</span></label>
+          <input class="form-input" type="text" id="newCartName" placeholder="เช่น รถเข็น F01" autocomplete="off" oninput="validateNewCartName()" />
+          <div class="acm-field-error" id="newCartNameError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Template ลิ้นชัก <span class="acm-req">*</span></label>
+          <select class="form-input" id="newCartTemplate"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">หมายเลขครุภัณฑ์ <span class="acm-optional">(ไม่บังคับ)</span></label>
+          <input class="form-input" type="text" id="newCartAsset" placeholder="เช่น MED-0042" autocomplete="off" />
+        </div>
+        <div class="acm-key-confirmed">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Key ยืนยันจาก Firmware อัตโนมัติ
+        </div>
+        <div class="acm-form-actions">
+          <button type="button" class="acm-btn-back" onclick="backToPendingList()">← ย้อนกลับ</button>
+          <button type="submit" class="acm-btn-confirm">ยืนยันและเพิ่มรถ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Cart Toast -->
+<div id="addCartToast" class="acm-toast" hidden>
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="addCartToastMsg"></span>
+</div>
+
 <!-- ══════════════════════════════════════════════════════════
      PG-CART
      ══════════════════════════════════════════════════════════ -->
@@ -116,11 +207,6 @@
           <div class="clock-time" id="clock">--:--:--</div>
           <div class="clock-date" id="dateTh"></div>
         </div>
-        <div class="nav-sep"></div>
-        <button type="button" class="btn-logout" onclick="logout()" title="ออกจากระบบ">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          ออกจากระบบ
-        </button>
       </div>
     </div>
   </nav>
@@ -345,6 +431,7 @@
         <span>85%</span>
       </div>
     </div>
+    <button type="button" class="btn-cart-detail" onclick="openCartDetail()">รายละเอียดรถเข็น</button>
     </div>
   </footer>
 
@@ -761,7 +848,7 @@
               <span>กำลังรอรับสัญญาณ...</span>
             </div>
           </div>
-          <button type="button" class="btn-login" onclick="handleLogin(event)">จำลองการสแกน</button>
+          <button type="button" class="btn-login" onclick="simulateCardScan()">จำลองการสแกน</button>
         </div>
 
         <!-- Face scan panel -->
@@ -791,6 +878,34 @@
           หากมีปัญหาในการเข้าสู่ระบบ กรุณาติดต่อ IT Support ของโรงพยาบาล
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Card scan confirm modal -->
+  <div id="cardScanModal" class="csp-overlay" hidden>
+    <div class="csp-modal">
+      <div class="csp-header">
+        <div class="csp-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div>
+          <div class="csp-title">พบบัตรแล้ว</div>
+          <div class="csp-sub">กรุณากรอกรหัสผ่านเพื่อยืนยันตัวตน</div>
+        </div>
+      </div>
+      <form onsubmit="confirmCardScanLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="cspPassword">รหัสผ่าน</label>
+          <div class="input-wrap">
+            <input class="form-input" type="password" id="cspPassword" placeholder="••••••••" autocomplete="off" />
+          </div>
+        </div>
+        <div class="csp-hint">ทดสอบ: Password = 1234</div>
+        <div class="csp-actions">
+          <button type="button" class="csp-btn-cancel" onclick="closeCardScanModal()">ยกเลิก</button>
+          <button type="submit" class="csp-btn-confirm">ยืนยัน</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1010,64 +1125,6 @@
       </button>
     </div>
 
-    <!-- Config Drawer: current cart -->
-    <div class="admin-section admin-section--featured">
-      <div class="admin-section-featured-tag">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>
-        ใช้งานอยู่
-      </div>
-      <div class="admin-section-head">
-        <div>
-          <div class="admin-section-title admin-section-title--featured">Config Drawer · รถเข็นปัจจุบัน</div>
-          <div class="admin-section-sub">เลือกรถเข็นที่จับคู่กับเครื่องนี้</div>
-        </div>
-        <button type="button" class="mc-btn mc-btn-primary" onclick="saveCartPairing()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          บันทึก
-        </button>
-      </div>
-      <div class="cfg-cart-bar" id="cfgCartBar">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2" stroke-width="2.5"/></svg>
-        <span id="cfgBarHwId">MC-A-001</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-3)"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        <select id="cfgBarCartName" class="cfg-cart-select" onchange="cfgSelectCart(this.value)"></select>
-      </div>
-      <div class="cfg-tmpl-readonly" id="cfgTmplReadonly"></div>
-    </div>
-
-    <hr class="admin-divider"/>
-
-    <!-- Flow guide -->
-    <div class="admin-flow">
-      <div class="admin-flow-step">
-        <div class="admin-flow-num">1</div>
-        <div class="admin-flow-text">
-          <div class="admin-flow-title">สร้าง Template</div>
-          <div class="admin-flow-sub">กำหนดโครงสร้างลิ้นชัก + Cassette</div>
-        </div>
-      </div>
-      <div class="admin-flow-arrow">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </div>
-      <div class="admin-flow-step">
-        <div class="admin-flow-num">2</div>
-        <div class="admin-flow-text">
-          <div class="admin-flow-title">เพิ่มรถเข็น</div>
-          <div class="admin-flow-sub">ลงทะเบียนรถเข็น + กำหนด Template</div>
-        </div>
-      </div>
-      <div class="admin-flow-arrow">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </div>
-      <div class="admin-flow-step">
-        <div class="admin-flow-num">3</div>
-        <div class="admin-flow-text">
-          <div class="admin-flow-title">ตรวจสอบ HIS</div>
-          <div class="admin-flow-sub">ยืนยันการเชื่อมต่อระบบโรงพยาบาล</div>
-        </div>
-      </div>
-    </div>
-
     <!-- Step 1: HIS -->
     <div class="admin-section">
       <div class="admin-section-head">
@@ -1089,10 +1146,11 @@
           <div class="admin-section-title">
             <span class="admin-step-badge">2</span>
             รถเข็นทั้งหมด
+            <span id="pendingDeviceBadge" class="pending-device-badge" hidden></span>
           </div>
           <div class="admin-section-sub">ลงทะเบียนรถเข็น แล้วเลือก Template ที่สร้างไว้</div>
         </div>
-        <button type="button" class="mc-btn mc-btn-primary" onclick="newCart()">
+        <button type="button" class="mc-btn mc-btn-primary" onclick="openAddCartModal()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           เพิ่มรถเข็น
         </button>
@@ -1759,11 +1817,6 @@
           <div class="clock-time" id="clock">--:--:--</div>
           <div class="clock-date" id="dateTh"></div>
         </div>
-        <div class="nav-sep"></div>
-        <button type="button" class="btn-logout" onclick="logout()" title="ออกจากระบบ">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          ออกจากระบบ
-        </button>
       </div>
     </div>
   </nav>
@@ -1820,6 +1873,10 @@
         <span>85%</span>
       </div>
     </div>
+    <button type="button" class="btn-logout" onclick="logout()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      ออกจากระบบ
+    </button>
     </div>
   </footer>
 

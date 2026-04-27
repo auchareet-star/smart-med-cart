@@ -36,34 +36,39 @@ function initCartPage() {
   if (!MC_STATE.hardwareId) MC_STATE.hardwareId = 'MC-A-001';
   seedMcData();
 
-  const cart = getCart(MC_STATE.currentCartId);
-  const shortId = cart ? cart.name.replace('รถเข็น ', '') : '—';
+  const cart    = getCart(MC_STATE.currentCartId);
+  const paired  = cart && cart.pairedHwId === MC_STATE.hardwareId;
+  const shortId = paired ? cart.name.replace('รถเข็น ', '') : '—';
 
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  set('cartInfoAvatar',       shortId);
-  set('cartInfoName',         cart ? cart.name : '—');
-  set('cartInfoHwId',         'รหัส ' + MC_STATE.hardwareId);
-  set('cartInfoStatName',     cart ? cart.name : '—');
-  set('cartInfoStatHw',       MC_STATE.hardwareId);
-  set('cartInfoDrawerCount',  MC_STATE.drawers.length || '—');
-  set('cartInfoCassetteCount', MC_STATE.cassettes.length || '—');
-  set('cartNavHwId',          MC_STATE.hardwareId || '—');
-  set('cartNavName',          cart ? cart.name : '—');
+  set('cartInfoAvatar',        shortId);
+  set('cartInfoName',          paired ? cart.name : '—');
+  set('cartInfoHwId',          'รหัส ' + MC_STATE.hardwareId);
+  set('cartInfoStatName',      paired ? cart.name : '—');
+  set('cartInfoStatHw',        MC_STATE.hardwareId);
+  set('cartInfoDrawerCount',   paired ? (MC_STATE.drawers.length || '—') : '—');
+  set('cartInfoCassetteCount', paired ? (MC_STATE.cassettes.length || '—') : '—');
+  set('cartNavHwId',           MC_STATE.hardwareId || '—');
+  set('cartNavName',           paired ? cart.name : '—');
 
   const tbody = document.getElementById('drawerTable');
   if (tbody) {
     tbody.innerHTML = '';
-    DRAWERS.forEach(d => {
-      tbody.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td><div class="drawer-id">${d.id}</div><div class="drawer-sub">${d.dc} Cassette</div></td>
-          <td class="temp-val">${d.dt}</td>
-          <td class="rh-val">${d.dr}</td>
-          <td class="temp-val">${d.ct}</td>
-          <td class="rh-val">${d.cr}</td>
-          <td><span class="status-pill">ปกติ</span></td>
-        </tr>`);
-    });
+    if (paired) {
+      DRAWERS.forEach(d => {
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td><div class="drawer-id">${d.id}</div><div class="drawer-sub">${d.dc} Cassette</div></td>
+            <td class="temp-val">${d.dt}</td>
+            <td class="rh-val">${d.dr}</td>
+            <td class="temp-val">${d.ct}</td>
+            <td class="rh-val">${d.cr}</td>
+            <td><span class="status-pill">ปกติ</span></td>
+          </tr>`);
+      });
+    } else {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">ยังไม่ได้จับคู่กับรถเข็น</td></tr>`;
+    }
   }
 }
 
@@ -261,6 +266,31 @@ function switchAuthMethod(method) {
   if (target) target.hidden = false;
 }
 
+function simulateCardScan() {
+  const modal = document.getElementById('cardScanModal');
+  if (!modal) return;
+  modal.hidden = false;
+  const pw = document.getElementById('cspPassword');
+  if (pw) { pw.value = ''; pw.focus(); }
+}
+
+function closeCardScanModal() {
+  const modal = document.getElementById('cardScanModal');
+  if (modal) modal.hidden = true;
+}
+
+function confirmCardScanLogin(e) {
+  if (e) e.preventDefault();
+  const password = document.getElementById('cspPassword')?.value || '';
+  if (password !== DEMO_PASSWORD) {
+    alert('รหัสผ่านไม่ถูกต้อง\n\nPassword: 1234');
+    return;
+  }
+  closeCardScanModal();
+  localStorage.setItem('mc_user', JSON.stringify({ username: 'admin', ...DEMO_USERS.admin }));
+  location.hash = '#pg-dashboard';
+}
+
 /* ═══════════════════════════════════════════════════════════
    MEDICATION CART — Data model & state
    ═══════════════════════════════════════════════════════════ */
@@ -305,36 +335,33 @@ function roleLabel(role) { return role === 'PHARMACIST' ? 'เภสัชกร
 const CART_TEMPLATES = [
   {
     id: 'T1',
-    name: 'มาตรฐาน 6 ลิ้นชัก',
+    name: 'มาตรฐาน 5 ลิ้นชัก',
     createdBy: 'u0',
     drawers: [
-      { drawerNumber:1, label:'ยาสามัญ',     zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
-      { drawerNumber:2, label:'ยาเฉพาะ',     zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
-      { drawerNumber:3, label:'ยาฉีด',        zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
-      { drawerNumber:4, label:'ยาเด็ก',       zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
-      { drawerNumber:5, label:'ยาเฉพาะทาง',  zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
-      { drawerNumber:6, label:'จัดยาผู้ป่วย', zone:'ZONE2', patientSlots:9, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
+      { drawerNumber:1, label:'ยาสามัญ',    zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
+      { drawerNumber:2, label:'ยาเฉพาะ',    zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
+      { drawerNumber:3, label:'ยาฉีด',       zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
+      { drawerNumber:4, label:'ยาเด็ก',      zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
+      { drawerNumber:5, label:'ยาเฉพาะทาง', zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
     ],
   },
   {
     id: 'T2',
-    name: 'รถเข็น ICU (4 ลิ้นชัก)',
+    name: 'รถเข็น ICU (3 ลิ้นชัก)',
     createdBy: 'u0',
     drawers: [
-      { drawerNumber:1, label:'ยา IV',            zone:'ZONE1', rows:2, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
-      { drawerNumber:2, label:'ยา IV สำรอง',     zone:'ZONE1', rows:2, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
-      { drawerNumber:3, label:'ยากิน',            zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
-      { drawerNumber:4, label:'จัดยาผู้ป่วย ICU', zone:'ZONE2', patientSlots:6, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
+      { drawerNumber:1, label:'ยา IV',        zone:'ZONE1', rows:2, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
+      { drawerNumber:2, label:'ยา IV สำรอง', zone:'ZONE1', rows:2, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
+      { drawerNumber:3, label:'ยากิน',        zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
     ],
   },
   {
     id: 'T3',
-    name: 'รถเข็นขนาดเล็ก (3 ลิ้นชัก)',
+    name: 'รถเข็นขนาดเล็ก (2 ลิ้นชัก)',
     createdBy: 'u0',
     drawers: [
-      { drawerNumber:1, label:'ยาสามัญ',      zone:'ZONE1', rows:1, cols:3, hasLock:true,  allowedRoles:['PHARMACIST','NURSE'] },
-      { drawerNumber:2, label:'ยาเฉพาะ',      zone:'ZONE1', rows:1, cols:3, hasLock:true,  allowedRoles:['PHARMACIST'] },
-      { drawerNumber:3, label:'จัดยาผู้ป่วย', zone:'ZONE2', patientSlots:4, hasLock:false, allowedRoles:['PHARMACIST','NURSE'] },
+      { drawerNumber:1, label:'ยาสามัญ', zone:'ZONE1', rows:1, cols:3, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
+      { drawerNumber:2, label:'ยาเฉพาะ', zone:'ZONE1', rows:1, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
     ],
   },
 ];
@@ -1760,24 +1787,23 @@ function initAdminCarts() {
   seedMcData();
   renderCartList();
   renderHisPanel();
+  renderPendingBadge();
 }
 
 function renderTmplList() {
   const list = document.getElementById('tmplList');
   if (!list) return;
   list.innerHTML = CART_TEMPLATES.map(t => {
-    const z1 = t.drawers.filter(d => d.zone === 'ZONE1').length;
-    const z2 = t.drawers.filter(d => d.zone === 'ZONE2').length;
     const used = CARTS.filter(c => c.templateId === t.id).length;
     const drawerChips = t.drawers.map(d =>
-      `<span class="tmpl-drawer-chip ${d.zone === 'ZONE1' ? 'chip-z1' : 'chip-z2'}">${d.label}</span>`
+      `<span class="tmpl-drawer-chip">${d.label}</span>`
     ).join('');
     return `
       <div class="tmpl-card">
         <div class="tmpl-card-top">
           <div>
             <div class="tmpl-card-name">${t.name}</div>
-            <div class="tmpl-card-meta">${t.drawers.length} ลิ้นชัก · ลิ้นชักยา ${z1} · ช่องผู้ป่วย ${z2} · ใช้กับรถ <b>${used}</b> คัน</div>
+            <div class="tmpl-card-meta">${t.drawers.length} ลิ้นชัก · ใช้กับรถ <b>${used}</b> คัน</div>
           </div>
           <button type="button" class="mc-btn mc-btn-outline" onclick="editTemplate('${t.id}')">แก้ไข</button>
         </div>
@@ -1801,23 +1827,27 @@ function renderCartList() {
 
   const hwId = MC_STATE.hardwareId || 'MC-A-001';
   list.innerHTML = CARTS.map(c => {
-    const tmpl = getCartTemplate(c.templateId);
-    const z1 = tmpl ? tmpl.drawers.filter(d => d.zone === 'ZONE1').length : 0;
-    const z2 = tmpl ? tmpl.drawers.filter(d => d.zone === 'ZONE2').length : 0;
+    const tmpl        = getCartTemplate(c.templateId);
     const isCurrent   = c.id === MC_STATE.currentCartId;
-    const pairedOther = c.pairedHwId && c.pairedHwId !== hwId;
+    const pairedHere  = c.pairedHwId === hwId;
+    const pairedOther = c.pairedHwId && !pairedHere;
+    const canPair     = !pairedOther && c.isActive;
     const stateClass  = !c.isActive ? 'cart-card-off' : pairedOther ? 'cart-card-paired' : isCurrent ? 'cart-current' : '';
+
+    const pairStatus = pairedHere
+      ? `<span class="cc-pair-status cc-pair-mine"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> จับคู่กับเครื่องนี้ (${hwId})</span>`
+      : pairedOther
+        ? `<span class="cc-pair-status cc-pair-other"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> จับคู่กับ ${c.pairedHwId}</span>`
+        : `<span class="cc-pair-status cc-pair-none">ยังไม่ได้จับคู่</span>`;
+
     return `
       <div class="cart-card ${stateClass}" id="cc-${c.id}">
         <div class="cart-card-header">
           <div>
             <div class="cart-card-name">${c.name}</div>
-            <div class="cart-card-ward">
-              <span class="cart-card-id">${c.id}</span>
-            </div>
+            <div class="cart-card-ward"><span class="cart-card-id">${c.id}</span></div>
           </div>
-          ${isCurrent   ? '<span class="cart-badge cart-badge-current">ใช้อยู่</span>' : ''}
-          ${pairedOther ? `<span class="cart-badge cart-badge-paired">จับคู่กับ ${c.pairedHwId}</span>` : ''}
+          ${isCurrent ? '<span class="cart-badge cart-badge-current">ใช้อยู่</span>' : ''}
         </div>
 
         <div class="cart-field-row">
@@ -1828,19 +1858,35 @@ function renderCartList() {
         </div>
 
         <div class="cart-tmpl-info">
-          <span class="cart-tmpl-chip chip-z1">ลิ้นชักยา ${z1}</span>
-          <span class="cart-tmpl-chip chip-z2">ช่องผู้ป่วย ${z2}</span>
+          ${tmpl ? tmpl.drawers.map(d => `<span class="cart-tmpl-chip">${d.label}</span>`).join('') : ''}
+        </div>
+
+        <div class="cc-pair-row">
+          ${pairStatus}
+          ${canPair && !pairedHere
+            ? `<button type="button" class="cc-pair-btn" onclick="pairCartHere('${c.id}')">จับคู่กับเครื่องนี้</button>`
+            : pairedHere
+              ? `<button type="button" class="cc-pair-btn cc-pair-btn-unlink" onclick="unpairCart('${c.id}')">ยกเลิกการจับคู่</button>`
+              : ''}
         </div>
 
         <div class="cart-card-footer">
-          <label class="cart-toggle-wrap" title="${c.isActive?'คลิกเพื่อปิดใช้งาน':'คลิกเพื่อเปิดใช้งาน'}">
+          <label class="cart-toggle-wrap">
             <input type="checkbox" class="cart-toggle-input" ${c.isActive?'checked':''}
               onchange="toggleCartActive('${c.id}')">
-            <span class="cart-toggle-track">
-              <span class="cart-toggle-thumb"></span>
-            </span>
+            <span class="cart-toggle-track"><span class="cart-toggle-thumb"></span></span>
             <span class="cart-toggle-label">${c.isActive?'เปิดใช้งาน':'ปิดใช้งาน'}</span>
           </label>
+          <div class="cc-actions">
+            <button type="button" class="cc-action-btn" onclick="editCart('${c.id}')" title="แก้ไข">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              แก้ไข
+            </button>
+            <button type="button" class="cc-action-btn cc-action-delete" onclick="deleteCart('${c.id}')" title="ลบ" ${isCurrent ? 'disabled title="ไม่สามารถลบรถที่กำลังใช้งาน"' : ''}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              ลบ
+            </button>
+          </div>
         </div>
       </div>`;
   }).join('') || '<div class="audit-empty">ยังไม่มีรถเข็น</div>';
@@ -1873,11 +1919,216 @@ function toggleCartActive(id) {
   if (c) { c.isActive = !c.isActive; renderCartList(); }
 }
 
+function pairCartHere(id) {
+  const hwId = MC_STATE.hardwareId || 'MC-A-001';
+  CARTS.forEach(c => { if (c.pairedHwId === hwId) c.pairedHwId = null; });
+  const c = getCart(id);
+  if (c) { c.pairedHwId = hwId; MC_STATE.currentCartId = id; }
+  renderCartList();
+}
+
+function unpairCart(id) {
+  const c = getCart(id);
+  if (c) { c.pairedHwId = null; }
+  renderCartList();
+}
+
+function deleteCart(id) {
+  if (id === MC_STATE.currentCartId) return;
+  if (!confirm('ลบรถเข็นนี้ออกจากระบบใช่ไหม?')) return;
+  const idx = CARTS.findIndex(c => c.id === id);
+  if (idx !== -1) CARTS.splice(idx, 1);
+  renderCartList();
+}
+
 function newCart() {
   const newId = 'CART-' + (CARTS.length + 1).toString().padStart(3, '0');
   const c = { id:newId, name:`รถเข็นใหม่ ${newId}`, templateId:CART_TEMPLATES[0].id, isActive:true };
   CARTS.push(c);
   editCart(newId);
+}
+
+/* ─── Pending IoT Devices (mock data) ──────────────────────── */
+const PENDING_DEVICES = [
+  { mac:'AA:BB:CC:DD:EE:F1', connectedAt: Date.now() - 5  * 60 * 1000, keyStatus:'ok' },
+  { mac:'CC:DD:EE:FF:00:A3', connectedAt: Date.now() - 2  * 60 * 1000, keyStatus:'ok' },
+];
+
+let _acmSelectedMac = null;
+
+function openAddCartModal() {
+  _acmSelectedMac = null;
+  renderAcmStep1();
+  document.getElementById('addCartModal').hidden = false;
+  document._acmEsc = e => { if (e.key === 'Escape') closeAddCartModal(); };
+  document.addEventListener('keydown', document._acmEsc);
+}
+
+function closeAddCartModal() {
+  const step2 = document.getElementById('acmStep2');
+  const nameVal = (document.getElementById('newCartName')?.value || '').trim();
+  if (!step2?.hidden && nameVal) {
+    if (!confirm('ยกเลิกการเพิ่มรถเข็นใช่ไหม?')) return;
+  }
+  document.getElementById('addCartModal').hidden = true;
+  if (document._acmEsc) {
+    document.removeEventListener('keydown', document._acmEsc);
+    document._acmEsc = null;
+  }
+}
+
+function renderAcmStep1() {
+  document.getElementById('acmTitle').textContent = 'เพิ่มรถเข็นใหม่';
+  document.getElementById('acmSub').textContent   = 'เลือก Device ที่รอยืนยัน';
+  document.getElementById('acmStep1').hidden = false;
+  document.getElementById('acmStep2').hidden = true;
+
+  const list = document.getElementById('acmDeviceList');
+  const form = document.getElementById('acmManualForm');
+  if (form) form.hidden = true;
+
+  if (!PENDING_DEVICES.length) {
+    list.innerHTML = `<div class="acm-empty">ยังไม่มีรถเข็นใหม่รอยืนยัน — เปิดรถแล้วต่อ WiFi: <b>MedCart-WiFi</b></div>`;
+    return;
+  }
+  list.innerHTML = PENDING_DEVICES.map(d => {
+    const mins = Math.floor((Date.now() - d.connectedAt) / 60000);
+    const time = mins < 1 ? 'เพิ่งเชื่อมต่อ' : `${mins} นาทีที่แล้ว`;
+    return `
+      <div class="acm-device-card">
+        <div class="acm-device-info">
+          <div class="acm-device-mac">${d.mac}</div>
+          <div class="acm-device-meta">${time}</div>
+        </div>
+        <div class="acm-device-right">
+          <span class="acm-key-badge acm-key-ok">Key ยืนยันแล้ว</span>
+          <button type="button" class="acm-btn-select" onclick="selectPendingDevice('${d.mac}')">เลือกรถนี้</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleManualKeyForm() {
+  const form = document.getElementById('acmManualForm');
+  const btn  = document.getElementById('acmManualToggle');
+  if (!form) return;
+  const show = form.hidden;
+  form.hidden = !show;
+  btn.hidden = show;
+  if (show) {
+    document.getElementById('manualMac').value = '';
+    document.getElementById('manualKey').value = '';
+    document.getElementById('manualKeyError').textContent = '';
+    setTimeout(() => document.getElementById('manualMac').focus(), 50);
+  }
+}
+
+function submitManualKey(e) {
+  e.preventDefault();
+  const mac = (document.getElementById('manualMac').value || '').trim().toUpperCase();
+  const key = (document.getElementById('manualKey').value || '').trim();
+  const errEl = document.getElementById('manualKeyError');
+
+  if (!mac || !key) { errEl.textContent = 'กรุณากรอก MAC Address และ Secret Key'; return; }
+  if (PENDING_DEVICES.some(d => d.mac === mac) || CARTS.some(c => c.pairedHwId === mac)) {
+    errEl.textContent = 'MAC Address นี้มีอยู่ในระบบแล้ว';
+    return;
+  }
+  errEl.textContent = '';
+
+  // Mock validation: any key starting with "MC-" or 16+ chars is accepted
+  const valid = key.startsWith('MC-') || key.length >= 8;
+  if (!valid) { errEl.textContent = 'Secret Key ไม่ถูกต้อง (ตัวอย่าง: MC-KEY-XXXX-XXXX)'; return; }
+
+  PENDING_DEVICES.push({ mac, connectedAt: Date.now(), keyStatus: 'ok', manual: true });
+  document.getElementById('acmManualForm').hidden = true;
+  document.getElementById('acmManualToggle').hidden = false;
+  renderAcmStep1();
+  renderPendingBadge();
+}
+
+function selectPendingDevice(mac) {
+  _acmSelectedMac = mac;
+  const d = PENDING_DEVICES.find(x => x.mac === mac);
+  if (!d) return;
+  const mins = Math.floor((Date.now() - d.connectedAt) / 60000);
+  const time = mins < 1 ? 'เพิ่งเชื่อมต่อ' : `${mins} นาทีที่แล้ว`;
+
+  document.getElementById('acmTitle').textContent = 'กรอกข้อมูลรถเข็น';
+  document.getElementById('acmSub').textContent   = 'กรอกข้อมูลพื้นฐานของรถเข็นใหม่';
+  document.getElementById('acmSelectedDevice').innerHTML = `
+    <div class="acm-device-selected-banner">
+      <span class="acm-device-mac">${mac}</span>
+      <span class="acm-device-meta">${time}</span>
+      <span class="acm-key-badge acm-key-ok">Key ยืนยันแล้ว</span>
+    </div>`;
+
+  document.getElementById('newCartTemplate').innerHTML =
+    CART_TEMPLATES.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  document.getElementById('newCartName').value = '';
+  document.getElementById('newCartNameError').textContent = '';
+  document.getElementById('newCartAsset').value = '';
+
+  document.getElementById('acmStep1').hidden = true;
+  document.getElementById('acmStep2').hidden = false;
+  setTimeout(() => document.getElementById('newCartName').focus(), 50);
+}
+
+function backToPendingList() {
+  const nameVal = (document.getElementById('newCartName')?.value || '').trim();
+  if (nameVal && !confirm('ยกเลิกการกรอกข้อมูลใช่ไหม?')) return;
+  renderAcmStep1();
+}
+
+function validateNewCartName() {
+  const name   = (document.getElementById('newCartName')?.value || '').trim();
+  const errEl  = document.getElementById('newCartNameError');
+  if (!errEl) return true;
+  if (name && CARTS.some(c => c.name === name)) {
+    errEl.textContent = 'ชื่อนี้มีอยู่แล้ว กรุณาใช้ชื่ออื่น';
+    return false;
+  }
+  errEl.textContent = '';
+  return true;
+}
+
+function submitAddCart(e) {
+  e.preventDefault();
+  const name = (document.getElementById('newCartName')?.value || '').trim();
+  if (!name || !validateNewCartName()) return;
+  const templateId = document.getElementById('newCartTemplate').value;
+  const assetNo    = (document.getElementById('newCartAsset')?.value || '').trim();
+
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const newId = `CART-${letters[Math.floor(CARTS.length / 10) % 26]}${String(CARTS.length % 10 + 1).padStart(2,'0')}`;
+  CARTS.push({ id: newId, name, templateId, isActive: true, pairedHwId: _acmSelectedMac, assetNo: assetNo || null });
+
+  const idx = PENDING_DEVICES.findIndex(d => d.mac === _acmSelectedMac);
+  if (idx !== -1) PENDING_DEVICES.splice(idx, 1);
+
+  document.getElementById('addCartModal').hidden = true;
+  if (document._acmEsc) { document.removeEventListener('keydown', document._acmEsc); document._acmEsc = null; }
+
+  renderCartList();
+  renderPendingBadge();
+  showAddCartToast(`รถเข็น ${name} พร้อมใช้งานแล้ว`);
+}
+
+function showAddCartToast(msg) {
+  const toast = document.getElementById('addCartToast');
+  const msgEl = document.getElementById('addCartToastMsg');
+  if (!toast || !msgEl) return;
+  msgEl.textContent = msg;
+  toast.hidden = false;
+  setTimeout(() => { toast.hidden = true; }, 3500);
+}
+
+function renderPendingBadge() {
+  const badge = document.getElementById('pendingDeviceBadge');
+  if (!badge) return;
+  const count = PENDING_DEVICES.filter(d => d.keyStatus === 'ok').length;
+  badge.textContent = `${count} เครื่องรอยืนยัน`;
+  badge.hidden = count === 0;
 }
 
 /* ─── CFG-2 Cart Editor ─────────────────────────────────────── */
@@ -3772,15 +4023,74 @@ function actionLabel(a) {
          a === 'ORDER_RESUMED' ? 'Order Resume' : a;
 }
 
+/* ─── Cart Detail Modal ─────────────────────────────────────── */
+function openCartDetail() {
+  const cart    = CARTS.find(c => c.id === MC_STATE.currentCartId) || {};
+  const tmpl    = getCartTemplate(cart.templateId) || {};
+  const drawers  = MC_STATE.drawers || [];
+  const cassettes = MC_STATE.cassettes || [];
+  const avail   = cassettes.filter(c => c.drugId).length;
+
+  const row = (label, val, cls = '') =>
+    `<div class="cdm-row"><span class="cdm-row-label">${label}</span><span class="cdm-row-val ${cls}">${val}</span></div>`;
+
+  document.getElementById('cartDetailBody').innerHTML = `
+    <div class="cdm-section">
+      <div class="cdm-section-label">ข้อมูลทั่วไป</div>
+      ${row('รหัสรถเข็น',         MC_STATE.hardwareId || 'MC-A-001', 'mono')}
+      ${row('ชื่อรถเข็น',          cart.name || 'Med Cart A-1')}
+      ${row('ยี่ห้อ / รุ่น',        'OmniRx Pro X2')}
+      ${row('หมายเลขซีเรียล',      'SN-20240315-001', 'mono')}
+      ${row('เวอร์ชันซอฟต์แวร์',    'v3.2.1')}
+      ${row('สถานะ',               'พร้อมใช้งาน', 'ok')}
+    </div>
+    <div class="cdm-section">
+      <div class="cdm-section-label">ฮาร์ดแวร์ &amp; เครือข่าย</div>
+      ${row('จำนวน Drawer',        `${drawers.length || 6} ลิ้นชัก`)}
+      ${row('Cassette ทั้งหมด',    `${cassettes.length || 36} ช่อง`)}
+      ${row('Cassette พร้อมใช้',   `${avail || 36} ช่อง`, 'ok')}
+      ${row('แบตเตอรี่',           '85% <span style="font-weight:400;color:var(--muted)">(กำลังชาร์จ · ใช้งานได้ประมาณ 6 ชม. 48 นาที)</span>')}
+      ${row('เครือข่าย',            'Wi-Fi (-52 dBm)')}
+      ${row('IP Address',          '192.168.10.45', 'mono')}
+      ${row('MAC Address',         'A4:C3:F0:12:34:56', 'mono')}
+    </div>
+    <div class="cdm-section">
+      <div class="cdm-section-label">ประวัติการบำรุงรักษา</div>
+      ${row('ซ่อมบำรุงล่าสุด',     '15 มี.ค. 2567')}
+      ${row('ซ่อมบำรุงครั้งถัดไป', '15 มิ.ย. 2567')}
+      ${row('ผู้รับผิดชอบ',         'ฝ่ายเทคนิคการแพทย์')}
+      ${row('จำนวนการซ่อม (YTD)',  '2 ครั้ง')}
+    </div>
+    <button type="button" class="cdm-reset-btn" onclick="resetDemo()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+      Reset รถเข็น
+    </button>`;
+
+  document.getElementById('cartDetailModal').hidden = false;
+  document._cdmEsc = e => { if (e.key === 'Escape') closeCartDetail(); };
+  document.addEventListener('keydown', document._cdmEsc);
+}
+
+function closeCartDetail() {
+  document.getElementById('cartDetailModal').hidden = true;
+  if (document._cdmEsc) {
+    document.removeEventListener('keydown', document._cdmEsc);
+    document._cdmEsc = null;
+  }
+}
+
 /* ─── Reset demo ────────────────────────────────────────────── */
 function resetDemo() {
   localStorage.removeItem('mc_ward_id');
   localStorage.removeItem('mc_user');
   _selectedWard = null;
-  // Clear session for next demo run
   if (MC_STATE.session) MC_STATE.session.user = null;
+  // Unpair current cart so pg-cart shows —
+  const hwId = MC_STATE.hardwareId || 'MC-A-001';
+  CARTS.forEach(c => { if (c.pairedHwId === hwId) c.pairedHwId = null; });
+  closeCartDetail();
   if (location.hash === '#pg-cart' || location.hash === '') {
-    location.reload();
+    initCartPage();
   } else {
     location.hash = '#pg-cart';
   }
