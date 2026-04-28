@@ -164,6 +164,9 @@
   </div>
 </div>
 
+<!-- Fill-flow Toast -->
+<div id="toast" class="fill-toast"></div>
+
 <!-- Add Cart Toast -->
 <div id="addCartToast" class="acm-toast" hidden>
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -195,7 +198,7 @@
       </div>
       <div class="topnav-spacer"></div>
       <div class="nav-ctx-pill">
-        <span class="nav-chip" data-cart-shortid>A01</span>
+        <span class="nav-chip" data-cart-shortid>A-1</span>
         <span class="nav-ctx-sep"></span>
         <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
         <span class="nav-ctx-sep"></span>
@@ -271,8 +274,8 @@
             </div>
           </div>
         </div>
-        <button type="button" class="btn-ready">
-          <span class="btn-ready-dot"></span>พร้อมใช้งาน
+        <button type="button" class="btn-ready" id="cartStatusBadge">
+          <span class="btn-ready-dot"></span><span id="cartStatusText">พร้อมใช้งาน</span>
         </button>
       </div>
 
@@ -301,7 +304,7 @@
         </div>
 
         <div class="stat-card">
-          <div class="stat-icon-wrap ic-amber">
+          <div class="stat-icon-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="7" width="17" height="10" rx="2"/>
               <path d="M22 11v2" stroke-width="2.5"/>
@@ -404,7 +407,7 @@
 
       <!-- actions -->
       <div class="cart-actions">
-        <button type="button" class="btn-start" onclick="location.hash='#pg-confirm'">
+        <button type="button" class="btn-start" id="btnStart" onclick="location.hash='#pg-confirm'">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
           เริ่มใช้งาน
         </button>
@@ -445,26 +448,30 @@
 <template id="pg-confirm">
 <div class="page">
 
-  <nav class="topnav">
+    <nav class="topnav">
     <div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+        </div>
       </div>
-      <div>
-        <div class="brand-name">Smart Medication Cart</div>
-        <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
       </div>
-    </div>
-    <div class="nav-center">
-      <span class="tag tag-solid" data-cart-shortid>A-1</span>
-      <span class="tag tag-text" data-ward-name>Ward 3A</span>
-      <span class="tag tag-ghost tag-online">Online</span>
-    </div>
-    <div class="nav-clock">
-      <div class="clock-time" id="clock">--:--:--</div>
-      <div class="clock-date" id="dateTh"></div>
-    </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -599,26 +606,30 @@
 <template id="pg-select-ward">
 <div class="page">
 
-  <nav class="topnav">
+    <nav class="topnav">
     <div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+        </div>
       </div>
-      <div>
-        <div class="brand-name">Smart Medication Cart</div>
-        <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
       </div>
-    </div>
-    <div class="nav-center">
-      <span class="tag tag-solid" data-cart-shortid>A-1</span>
-      <span class="tag tag-text" data-ward-name>Ward 3A</span>
-      <span class="tag tag-ghost tag-online">Online</span>
-    </div>
-    <div class="nav-clock">
-      <div class="clock-time" id="clock">--:--:--</div>
-      <div class="clock-date" id="dateTh"></div>
-    </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -678,26 +689,30 @@
 <template id="pg-login">
 <div class="page">
 
-  <nav class="topnav">
+    <nav class="topnav">
     <div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+        </div>
       </div>
-      <div>
-        <div class="brand-name">Smart Medication Cart</div>
-        <div class="brand-sub">ระบบรถเข็นยาอัจฉริยะ</div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
       </div>
-    </div>
-    <div class="nav-center">
-      <span class="tag tag-solid" data-cart-shortid>A-1</span>
-      <span class="tag tag-text" data-ward-name>Ward 3A</span>
-      <span class="tag tag-ghost tag-online">Online</span>
-    </div>
-    <div class="nav-clock">
-      <div class="clock-time" id="clock">--:--:--</div>
-      <div class="clock-date" id="dateTh"></div>
-    </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -926,14 +941,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-load-mode">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">เลือกประเภทการจัดยา</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">เลือกประเภทการจัดยา</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body mc-body-narrow">
     <!-- Page header -->
@@ -1070,13 +1103,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-session-config">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">ปรับ Config รอบนี้</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">ปรับ Config รอบนี้</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body">
     <div class="mc-back-row">
@@ -1251,14 +1303,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-zone2">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">ช่องแพ็คผู้ป่วย</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">ช่องแพ็คผู้ป่วย</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body mc-body-narrow">
     <div class="mc-back-row">
@@ -1300,14 +1370,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-patient-queue">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">จัดยา — ตามรายผู้ป่วย</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">จัดยา — ตามรายผู้ป่วย</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body pq-body">
     <div class="mc-back-row">
@@ -1361,14 +1449,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-patient-detail">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">จัดยาให้ผู้ป่วย</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">จัดยาให้ผู้ป่วย</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body">
     <div class="mc-back-row">
@@ -1420,14 +1526,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-drug-queue">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">จัดยา — ตามรายการยา</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">จัดยา — ตามรายการยา</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body dq-body">
     <div class="mc-back-row">
@@ -1467,14 +1591,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-drug-detail">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">จ่ายยา — รายการ</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">จ่ายยา — รายการ</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body">
     <div class="mc-back-row">
@@ -1514,14 +1656,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-session-summary">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">สรุปรอบจัดยา</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">สรุปรอบจัดยา</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body mc-body-narrow">
     <div class="mc-back-row">
@@ -1543,32 +1703,30 @@
 <template id="pg-load-meds">
 <div class="page">
 
-  <nav class="topnav">
+    <nav class="topnav">
     <div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="5" y="3" width="14" height="14" rx="2"/>
-          <line x1="5" y1="8" x2="19" y2="8"/>
-          <line x1="5" y1="13" x2="19" y2="13"/>
-          <circle cx="8" cy="20" r="1.5"/>
-          <circle cx="16" cy="20" r="1.5"/>
-        </svg>
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">จัดยาเข้ารถเข็น</div>
+        </div>
       </div>
-      <div>
-        <div class="brand-name">Smart Medication Cart</div>
-        <div class="brand-sub">จัดยาเข้ารถเข็น</div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
       </div>
-    </div>
-    <div class="nav-center">
-      <span class="tag tag-solid" data-cart-shortid>A-1</span>
-      <span class="tag tag-text" data-ward-name>Ward 3A</span>
-      <span class="tag tag-ghost tag-online">Online</span>
-    </div>
-    <div class="nav-clock">
-      <div class="clock-time" id="clock">--:--:--</div>
-      <div class="clock-date" id="dateTh"></div>
-    </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -1670,14 +1828,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-drawer-detail">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">รายละเอียดลิ้นชัก</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">รายละเอียดลิ้นชัก</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body">
     <div class="mc-back-row">
@@ -1712,14 +1888,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-refill">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">เติมยาเข้า Cassette</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">เติมยาเข้า Cassette</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body mc-body-narrow" id="refillRoot"></div>
 
@@ -1736,14 +1930,32 @@
      ══════════════════════════════════════════════════════════ -->
 <template id="pg-audit">
 <div class="page">
-  <nav class="topnav"><div class="topnav-inner">
-    <div class="brand">
-      <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
-      <div><div class="brand-name">Smart Medication Cart</div><div class="brand-sub">ประวัติการใช้งาน</div></div>
+    <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">ประวัติการใช้งาน</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
     </div>
-    <div class="nav-center"><span class="tag tag-solid" data-cart-shortid>A-1</span><span class="tag tag-text" data-ward-name>Ward 3A</span><span class="tag tag-ghost tag-online">Online</span></div>
-    <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
-  </div></nav>
+  </nav>
 
   <div class="mc-body">
     <div class="mc-back-row">
@@ -1803,7 +2015,7 @@
       <!-- Center context pill -->
       <div class="topnav-spacer"></div>
       <div class="nav-ctx-pill">
-        <span class="nav-chip" data-cart-shortid>A01</span>
+        <span class="nav-chip" data-cart-shortid>A-1</span>
         <span class="nav-ctx-sep"></span>
         <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
         <span class="nav-ctx-sep"></span>
@@ -1883,6 +2095,329 @@
 </div>
 </template>
 
+
+
+
+<!-- ══════════════════════════════════════════════════════════
+     INTEGRATED PAGES: pg-prep-type
+     ══════════════════════════════════════════════════════════ -->
+
+<template id="pg-prep-type">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">เลือกประเภทการจัดยา</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+    <div class="ptp-body">
+
+      <button class="hdr-back" onclick="location.hash='#pg-dashboard'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        Dashboard
+      </button>
+
+      <!-- ── Hero banner ── -->
+      <div class="dash-hero ptp-hero">
+        <div class="hero-left">
+          <div class="hero-greet">เลือกประเภทการจัดยา</div>
+          <div class="hero-sub"><span id="prepWardCtx">Ward 3A</span><span id="prepWardHeader" style="display:none;"></span> · เลือกประเภท แล้วเลือกรอบเวลา</div>
+          <!-- step indicators -->
+          <div class="ptp-steps">
+            <span class="ptp-step active" id="ptpStep1">① เลือกประเภท</span>
+            <span class="ptp-step-sep">›</span>
+            <span class="ptp-step" id="ptpStep2">② เลือกรอบเวลา</span>
+            <span class="ptp-step-sep">›</span>
+            <span class="ptp-step" id="ptpStep3">③ เริ่มจัดยา</span>
+          </div>
+        </div>
+        <div class="hero-right">
+          <div class="ptp-hero-stats">
+            <div class="ptp-hero-stat"><div class="ptp-hero-num" id="ptpNumPatients">—</div><div class="ptp-hero-lbl">ผู้ป่วย</div></div>
+            <div class="ptp-hero-divider"></div>
+            <div class="ptp-hero-stat"><div class="ptp-hero-num" id="ptpNumTotal">—</div><div class="ptp-hero-lbl">รายการยา</div></div>
+            <div class="ptp-hero-divider"></div>
+            <div class="ptp-hero-stat"><div class="ptp-hero-num">4</div><div class="ptp-hero-lbl">รอบเวลา</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Step 1: Type ── -->
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <div class="dash-panel-title">
+            <div class="dash-panel-icon dash-panel-icon-teal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            ① ประเภทการจัดยา
+          </div>
+          <span class="dash-link-info" id="ptpTypeStatus">เลือก 1 รูปแบบ</span>
+        </div>
+        <div class="ptp-mode-grid">
+
+          <div class="ptp-mode-card" id="ptpCardPatient" onclick="selectPrepType('patient')">
+            <div class="ptp-mode-icon" style="background:var(--accent-lt);color:var(--accent-dk);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div class="ptp-mode-text">
+              <div class="ptp-mode-name">จัดยาตามผู้ป่วย <span class="ptp-mode-recommended">แนะนำ</span></div>
+              <div class="ptp-mode-desc">เตรียมยาโดยยึดผู้ป่วยเป็นหลัก เลือกทีละรายและจัดยาลงช่องแยกตามแต่ละคน</div>
+            </div>
+            <div class="ptp-mode-stats">
+              <span class="ptp-mode-chip teal" id="ptpChipPatients">— ผู้ป่วย</span>
+              <span class="ptp-mode-chip teal" id="ptpChipOrders">— รายการ</span>
+            </div>
+            <span class="ptp-select-indicator" id="ptpChkPatient"></span>
+          </div>
+
+          <div class="ptp-mode-card" id="ptpCardMedication" onclick="selectPrepType('medication')">
+            <div class="ptp-mode-icon" style="background:#dbeafe;color:#2563eb;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            </div>
+            <div class="ptp-mode-text">
+              <div class="ptp-mode-name">จัดยาตามรายการยา</div>
+              <div class="ptp-mode-desc">เตรียมยาโดยยึดรายการยาเป็นหลัก หยิบทีละชนิดแล้วกระจายเข้า Cassette ของแต่ละราย</div>
+            </div>
+            <div class="ptp-mode-stats">
+              <span class="ptp-mode-chip blue" id="ptpChipDrugs">— ชนิดยา</span>
+              <span class="ptp-mode-chip blue" id="ptpChipOrdersMed">— รายการ</span>
+            </div>
+            <span class="ptp-select-indicator" id="ptpChkMedication"></span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── Step 2: Time round ── -->
+      <div class="dash-panel" id="ptpRoundPanel">
+        <div class="dash-panel-header">
+          <div class="dash-panel-title">
+            <div class="dash-panel-icon dash-panel-icon-purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            ② รอบเวลา
+          </div>
+          <span class="dash-link-info" id="ptpRoundStatus">เลือกประเภทก่อน</span>
+        </div>
+
+        <!-- Lock notice (shown when no type selected) -->
+        <div class="ptp-lock-notice" id="ptpRoundLock">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          เลือกประเภทการจัดยาข้างบนก่อน จึงจะเลือกรอบเวลาได้
+        </div>
+
+        <!-- Round options (shown after type selected) -->
+        <div id="ptpRoundContent" style="display:none;">
+
+          <!-- ทุกรอบเวลา -->
+          <div class="ptp-round-all" id="ptpRoundAll" onclick="selectPrepRound('all')">
+            <div class="ptp-round-all-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div class="ptp-round-all-text">
+              <div class="ptp-round-all-name">ทุกรอบเวลา</div>
+              <div class="ptp-round-all-sub">จัดยาทุกรอบในครั้งเดียว · <span id="ptpNumAllRounds">—</span> รายการทั้งวัน</div>
+            </div>
+            <span class="ptp-mode-chip teal" style="flex-shrink:0;">4 รอบ</span>
+            <span class="ptp-select-indicator" id="ptpChkAll"></span>
+          </div>
+
+          <!-- 4 individual rounds -->
+          <div class="ptp-rounds-grid">
+
+            <div class="ptp-round-card" id="ptpRoundMorning" onclick="selectPrepRound('morning')">
+              <div class="ptp-round-icon" style="background:#FEF3C7;color:#D97706;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              </div>
+              <div class="ptp-round-info"><div class="ptp-round-name">รอบเช้า</div><div class="ptp-round-time">06:00 – 10:00 น.</div></div>
+              <div class="ptp-round-count" style="color:#D97706;" id="ptpNumMorning">—</div>
+              <div class="ptp-round-unit">รายการ</div>
+              <span class="ptp-select-indicator" id="ptpChkMorning"></span>
+            </div>
+
+            <div class="ptp-round-card" id="ptpRoundNoon" onclick="selectPrepRound('noon')">
+              <div class="ptp-round-icon" style="background:#dbeafe;color:#2563eb;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div class="ptp-round-info"><div class="ptp-round-name">รอบเที่ยง</div><div class="ptp-round-time">11:00 – 14:00 น.</div></div>
+              <div class="ptp-round-count" style="color:#2563eb;" id="ptpNumNoon">—</div>
+              <div class="ptp-round-unit">รายการ</div>
+              <span class="ptp-select-indicator" id="ptpChkNoon"></span>
+            </div>
+
+            <div class="ptp-round-card" id="ptpRoundEvening" onclick="selectPrepRound('evening')">
+              <div class="ptp-round-icon" style="background:#FFEDD5;color:#EA580C;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 00-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 6 12 2 16 6"/></svg>
+              </div>
+              <div class="ptp-round-info"><div class="ptp-round-name">รอบเย็น</div><div class="ptp-round-time">16:00 – 19:00 น.</div></div>
+              <div class="ptp-round-count" style="color:#EA580C;" id="ptpNumEvening">—</div>
+              <div class="ptp-round-unit">รายการ</div>
+              <span class="ptp-select-indicator" id="ptpChkEvening"></span>
+            </div>
+
+            <div class="ptp-round-card" id="ptpRoundBedtime" onclick="selectPrepRound('bedtime')">
+              <div class="ptp-round-icon" style="background:#E0E7FF;color:#4338CA;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+              </div>
+              <div class="ptp-round-info"><div class="ptp-round-name">ก่อนนอน</div><div class="ptp-round-time">20:00 – 23:00 น.</div></div>
+              <div class="ptp-round-count" style="color:#4338CA;" id="ptpNumBedtime">—</div>
+              <div class="ptp-round-unit">รายการ</div>
+              <span class="ptp-select-indicator" id="ptpChkBedtime"></span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Confirm bar ── -->
+      <div class="ptp-confirm-bar">
+        <div>
+          <div class="ptp-confirm-label">สรุปการเลือก</div>
+          <div class="ptp-confirm-summary" id="ptpConfirmSummary">เลือกประเภทและรอบเวลา</div>
+        </div>
+        <button class="ptp-confirm-btn" id="ptpConfirmBtn" disabled onclick="confirmPrepFlow()">
+          เริ่มจัดยา
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </div>
+
+    </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Med Cart v3.2.1</span>
+        <span class="footer-sep">·</span>
+        <span data-hw-id>MC-A-001</span>
+        <span class="footer-sep">·</span>
+        <div class="footer-batt">
+          <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+          <span>85%</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </footer>
+
+</div>
+</template>
+
+
+
+<template id="pg-prep-work">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub" id="ppwNavSub">รายการจัดยา</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="ppw-body">
+
+    <button class="hdr-back" onclick="location.hash='#pg-prep-type'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      ย้อนกลับ
+    </button>
+
+    <div class="dash-hero ppw-hero">
+      <div class="hero-left">
+        <div class="hero-greet" id="ppwTitle">—</div>
+        <div class="hero-sub" id="ppwSub">—</div>
+      </div>
+      <div class="hero-right">
+        <div class="ppw-hero-stats">
+          <div class="ppw-hs">
+            <div class="ppw-hs-num" id="ppwStatA">—</div>
+            <div class="ppw-hs-lbl" id="ppwStatALbl">ผู้ป่วย</div>
+          </div>
+          <div class="ptp-hero-divider"></div>
+          <div class="ppw-hs">
+            <div class="ppw-hs-num" id="ppwStatB">—</div>
+            <div class="ppw-hs-lbl" id="ppwStatBLbl">รายการ</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-panel">
+      <div class="dash-panel-header">
+        <span class="dash-panel-icon dash-panel-icon-teal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+        </span>
+        <span class="dash-panel-title" id="ppwPanelTitle">รายการ</span>
+      </div>
+      <div id="ppwList"></div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Med Cart v3.2.1</span>
+        <span class="footer-sep">·</span>
+        <span data-hw-id>MC-A-001</span>
+        <span class="footer-sep">·</span>
+        <div class="footer-batt">
+          <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+          <span>85%</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </footer>
+</div>
+</template>
 
 
 <script src="script.js"></script>

@@ -51,6 +51,16 @@ function initCartPage() {
   set('cartNavHwId',           MC_STATE.hardwareId || '—');
   set('cartNavName',           paired ? cart.name : '—');
 
+  const btnStart = document.getElementById('btnStart');
+  if (btnStart) btnStart.disabled = !paired;
+
+  const badge = document.getElementById('cartStatusBadge');
+  const badgeText = document.getElementById('cartStatusText');
+  if (badge && badgeText) {
+    badgeText.textContent = paired ? 'พร้อมใช้งาน' : 'ยังไม่ได้จับคู่';
+    badge.classList.toggle('btn-ready-unpaired', !paired);
+  }
+
   const tbody = document.getElementById('drawerTable');
   if (tbody) {
     tbody.innerHTML = '';
@@ -109,12 +119,14 @@ function applyWardToPage() {
 function applyCartToPage() {
   if (!MC_STATE.hardwareId) MC_STATE.hardwareId = 'MC-A-001';
   const cart = getCart(MC_STATE.currentCartId);
-  const shortId = cart ? cart.name.replace('รถเข็น ', '') : 'A-1';
+  const paired = cart && cart.pairedHwId === MC_STATE.hardwareId;
+  const shortId = paired ? cart.name.replace('รถเข็น ', '') : '—';
   const cartName = cart ? cart.name : 'Med Cart A-1';
   const hwId = MC_STATE.hardwareId;
   document.querySelectorAll('[data-cart-shortid]').forEach(el => el.textContent = shortId);
   document.querySelectorAll('[data-cart-name]').forEach(el => el.textContent = cartName);
   document.querySelectorAll('[data-hw-id]').forEach(el => el.textContent = hwId);
+  document.querySelectorAll('[data-ward-name]').forEach(el => el.textContent = paired ? getCurrentWard().name : '—');
 }
 
 /* ─── Ward selection (pg-select-ward) ───────────────────────── */
@@ -1738,11 +1750,11 @@ function renderHisPanel() {
 function startNormalFlow() {
   if (MC_STATE.session.user) {
     // already authenticated this session
-    location.hash = '#pg-load-mode';
+    location.hash = '#pg-prep-type';
     return;
   }
   openSessionAuthModal(() => {
-    location.hash = '#pg-load-mode';
+    location.hash = '#pg-prep-type';
   });
 }
 
@@ -4030,6 +4042,7 @@ function openCartDetail() {
   const drawers  = MC_STATE.drawers || [];
   const cassettes = MC_STATE.cassettes || [];
   const avail   = cassettes.filter(c => c.drugId).length;
+  const paired  = cart && cart.pairedHwId === MC_STATE.hardwareId;
 
   const row = (label, val, cls = '') =>
     `<div class="cdm-row"><span class="cdm-row-label">${label}</span><span class="cdm-row-val ${cls}">${val}</span></div>`;
@@ -4037,19 +4050,15 @@ function openCartDetail() {
   document.getElementById('cartDetailBody').innerHTML = `
     <div class="cdm-section">
       <div class="cdm-section-label">ข้อมูลทั่วไป</div>
-      ${row('รหัสรถเข็น',         MC_STATE.hardwareId || 'MC-A-001', 'mono')}
-      ${row('ชื่อรถเข็น',          cart.name || 'Med Cart A-1')}
+      ${row('รหัสรถเข็น',          MC_STATE.hardwareId || 'MC-A-001', 'mono')}
       ${row('ยี่ห้อ / รุ่น',        'OmniRx Pro X2')}
       ${row('หมายเลขซีเรียล',      'SN-20240315-001', 'mono')}
       ${row('เวอร์ชันซอฟต์แวร์',    'v3.2.1')}
-      ${row('สถานะ',               'พร้อมใช้งาน', 'ok')}
+      ${row('สถานะ', paired ? 'พร้อมใช้งาน' : 'ยังไม่ได้จับคู่', paired ? 'ok' : 'warn')}
     </div>
     <div class="cdm-section">
       <div class="cdm-section-label">ฮาร์ดแวร์ &amp; เครือข่าย</div>
-      ${row('จำนวน Drawer',        `${drawers.length || 6} ลิ้นชัก`)}
-      ${row('Cassette ทั้งหมด',    `${cassettes.length || 36} ช่อง`)}
-      ${row('Cassette พร้อมใช้',   `${avail || 36} ช่อง`, 'ok')}
-      ${row('แบตเตอรี่',           '85% <span style="font-weight:400;color:var(--muted)">(กำลังชาร์จ · ใช้งานได้ประมาณ 6 ชม. 48 นาที)</span>')}
+      ${row('แบตเตอรี่',           '<span style="color:#059669;font-weight:600;">⚡ 85%</span> <span style="font-weight:400;color:var(--muted)">(กำลังชาร์จ · ใช้งานได้ประมาณ 6 ชม. 48 นาที)</span>')}
       ${row('เครือข่าย',            'Wi-Fi (-52 dBm)')}
       ${row('IP Address',          '192.168.10.45', 'mono')}
       ${row('MAC Address',         'A4:C3:F0:12:34:56', 'mono')}
@@ -4085,10 +4094,10 @@ function resetDemo() {
   localStorage.removeItem('mc_user');
   _selectedWard = null;
   if (MC_STATE.session) MC_STATE.session.user = null;
-  // Unpair current cart so pg-cart shows —
   const hwId = MC_STATE.hardwareId || 'MC-A-001';
   CARTS.forEach(c => { if (c.pairedHwId === hwId) c.pairedHwId = null; });
   closeCartDetail();
+  applyCartToPage();
   if (location.hash === '#pg-cart' || location.hash === '') {
     initCartPage();
   } else {
@@ -4657,4 +4666,316 @@ function initPage() {
   initRefill();
   initConfig();
   initAudit();
+  initPrepType();
+  initPrepWork();
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   INTEGRATED JS: pg-prep-type
+   ══════════════════════════════════════════════════════════ */
+
+/* ── ward filter helper ── */
+function _wardOrders() {
+  const ward    = getCurrentWard();
+  const side    = ward.id.slice(-1);           // 'A' or 'B'
+  const wardKey = 'Ward ' + side;              // 'Ward A' or 'Ward B'
+  const patMap  = {};
+  (MC_STATE.patients || []).forEach(function(p) { patMap[p.id] = p; });
+  return (MC_STATE.orders || []).filter(function(o) {
+    var p = patMap[o.patientId];
+    return p && p.ward === wardKey;
+  });
+}
+
+/* ── renderPrepTypePage ── */
+function renderPrepTypePage() {
+  const orders   = _wardOrders();
+  const patients = new Set(orders.map(function(o) { return o.patientId; })).size;
+  const drugs    = new Set(orders.map(function(o) { return o.drugId; })).size;
+  const total    = orders.length;
+  const morning  = orders.filter(function(o) { return o.rounds && o.rounds.includes('เช้า'); }).length;
+  const noon     = orders.filter(function(o) { return o.rounds && o.rounds.includes('กลางวัน'); }).length;
+  const evening  = orders.filter(function(o) { return o.rounds && o.rounds.includes('เย็น'); }).length;
+  const bedtime  = orders.filter(function(o) { return o.rounds && o.rounds.includes('ก่อนนอน'); }).length;
+  const allRound = morning + noon + evening + bedtime;
+
+  function set(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+  // Hero
+  set('ptpNumPatients', patients);
+  set('ptpNumTotal', allRound);
+
+  // Type cards
+  set('ptpChipPatients',  patients + ' ผู้ป่วย');
+  set('ptpChipOrders',    allRound + ' ครั้ง');
+  set('ptpChipDrugs',     drugs + ' ชนิดยา');
+  set('ptpChipOrdersMed', allRound + ' ครั้ง');
+
+  // Round totals
+  set('ptpNumAllRounds', allRound);
+  set('ptpNumMorning',   morning);
+  set('ptpNumNoon',      noon);
+  set('ptpNumEvening',   evening);
+  set('ptpNumBedtime',   bedtime);
+}
+
+
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  if (!msg) { t.classList.remove('show'); return; }
+  t.textContent = msg;
+  t.classList.add('show');
+}
+
+
+/* ── Page init stubs for integrated pages ─────────────────── */
+
+let selectedPrepType = null;
+let selectedPrepRound = null;
+
+const _PTP_TYPE_LABELS  = { patient: 'จัดยาตามผู้ป่วย', medication: 'จัดยาตามรายการยา' };
+const _PTP_ROUND_LABELS = { all: 'ทุกรอบเวลา', morning: 'รอบเช้า', noon: 'รอบเที่ยง', evening: 'รอบเย็น', bedtime: 'ก่อนนอน' };
+
+function selectPrepType(type) {
+  selectedPrepType = type;
+  selectedPrepRound = null;
+
+  // update type card selection
+  ['ptpCardPatient','ptpCardMedication'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('selected', id === 'ptpCard' + (type === 'patient' ? 'Patient' : 'Medication'));
+  });
+  const status = document.getElementById('ptpTypeStatus');
+  if (status) status.textContent = '✓ ' + _PTP_TYPE_LABELS[type];
+
+  // unlock round panel
+  const lock = document.getElementById('ptpRoundLock');
+  const content = document.getElementById('ptpRoundContent');
+  if (lock)    lock.style.display = 'none';
+  if (content) content.style.display = 'block';
+
+  // reset round selection
+  ['ptpRoundAll','ptpRoundMorning','ptpRoundNoon','ptpRoundEvening','ptpRoundBedtime'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('selected');
+  });
+  const rs = document.getElementById('ptpRoundStatus');
+  if (rs) rs.textContent = 'เลือก 1 รอบ';
+
+  // step indicators
+  const s1 = document.getElementById('ptpStep1'); if (s1) { s1.classList.remove('active'); s1.classList.add('done'); }
+  const s2 = document.getElementById('ptpStep2'); if (s2) { s2.classList.add('active'); s2.classList.remove('done'); }
+
+  _ptpUpdateConfirmBar();
+}
+
+function selectPrepRound(round) {
+  selectedPrepRound = round;
+
+  const roundEls = { all: 'ptpRoundAll', morning: 'ptpRoundMorning', noon: 'ptpRoundNoon', evening: 'ptpRoundEvening', bedtime: 'ptpRoundBedtime' };
+  Object.entries(roundEls).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('selected', key === round);
+  });
+  const rs = document.getElementById('ptpRoundStatus');
+  if (rs) rs.textContent = '✓ ' + _PTP_ROUND_LABELS[round];
+
+  // step indicators
+  const s2 = document.getElementById('ptpStep2'); if (s2) { s2.classList.remove('active'); s2.classList.add('done'); }
+  const s3 = document.getElementById('ptpStep3'); if (s3) s3.classList.add('active');
+
+  _ptpUpdateConfirmBar();
+}
+
+function _ptpUpdateConfirmBar() {
+  const summary = document.getElementById('ptpConfirmSummary');
+  const btn     = document.getElementById('ptpConfirmBtn');
+  const ready   = !!(selectedPrepType && selectedPrepRound);
+  if (btn) btn.disabled = !ready;
+  if (summary) {
+    if (!selectedPrepType) {
+      summary.textContent = 'เลือกประเภทและรอบเวลา';
+    } else if (!selectedPrepRound) {
+      summary.textContent = _PTP_TYPE_LABELS[selectedPrepType] + ' · เลือกรอบเวลา';
+    } else {
+      summary.textContent = _PTP_TYPE_LABELS[selectedPrepType] + ' · ' + _PTP_ROUND_LABELS[selectedPrepRound];
+    }
+  }
+}
+
+function confirmPrepFlow() {
+  if (!selectedPrepType || !selectedPrepRound) return;
+  goToPrepFlow(selectedPrepType, selectedPrepRound);
+}
+
+function goToPrepFlow(type, round) {
+  selectedPrepType = type;
+  selectedPrepRound = round || null;
+  location.hash = '#pg-prep-work';
+}
+
+function initPrepType() {
+  if (location.hash.replace('#','') !== 'pg-prep-type') return;
+  seedMcData();
+
+  // reset selection state
+  selectedPrepType = null;
+  selectedPrepRound = null;
+
+  // reset type cards
+  ['ptpCardPatient','ptpCardMedication'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.classList.remove('selected');
+  });
+  const ts = document.getElementById('ptpTypeStatus'); if (ts) ts.textContent = 'เลือก 1 รูปแบบ';
+
+  // lock round panel
+  const lock    = document.getElementById('ptpRoundLock');
+  const content = document.getElementById('ptpRoundContent');
+  if (lock)    lock.style.display = '';
+  if (content) content.style.display = 'none';
+  ['ptpRoundAll','ptpRoundMorning','ptpRoundNoon','ptpRoundEvening','ptpRoundBedtime'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.classList.remove('selected');
+  });
+  const rs = document.getElementById('ptpRoundStatus'); if (rs) rs.textContent = 'เลือกประเภทก่อน';
+
+  // step indicators
+  ['ptpStep1','ptpStep2','ptpStep3'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('active', i === 0);
+    el.classList.remove('done');
+  });
+
+  // confirm bar
+  _ptpUpdateConfirmBar();
+
+  if (typeof renderPrepTypePage === 'function') renderPrepTypePage();
+}
+
+/* ── pg-prep-work ─────────────────────────────────────────── */
+const _PPW_ROUND_MAP = { morning:'เช้า', noon:'กลางวัน', evening:'เย็น', bedtime:'ก่อนนอน' };
+
+function initPrepWork() {
+  if (location.hash.replace('#','') !== 'pg-prep-work') return;
+  seedMcData();
+  renderPrepWorkPage();
+}
+
+function renderPrepWorkPage() {
+  const type  = selectedPrepType  || 'patient';
+  const round = selectedPrepRound || 'all';
+
+  const roundTh   = _PPW_ROUND_MAP[round] || null;
+  const roundLabel = _PTP_ROUND_LABELS[round] || 'ทุกรอบเวลา';
+  const typeLabel  = _PTP_TYPE_LABELS[type]  || 'จัดยา';
+
+  // filter orders by ward then by round
+  const orders = _wardOrders().filter(function(o) {
+    if (!roundTh) return true;
+    return o.rounds && o.rounds.includes(roundTh);
+  });
+
+  // lookup helpers
+  const patients   = MC_STATE.patients || [];
+  const patientMap = {};
+  patients.forEach(function(p) { patientMap[p.id] = p; });
+  const drugMap = {};
+  DRUG_LIST.forEach(function(d) { drugMap[d.id] = d; });
+
+  // update hero
+  const set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+  set('ppwTitle',    typeLabel);
+  set('ppwSub',      roundLabel);
+  set('ppwNavSub',   typeLabel + ' · ' + roundLabel);
+
+  var listEl = document.getElementById('ppwList');
+  if (!listEl) return;
+
+  if (type === 'patient') {
+    // group by patient
+    var groups = {};
+    orders.forEach(function(o) {
+      if (!groups[o.patientId]) groups[o.patientId] = [];
+      groups[o.patientId].push(o);
+    });
+    var patientIds = Object.keys(groups);
+
+    set('ppwStatA',    patientIds.length);
+    set('ppwStatALbl', 'ผู้ป่วย');
+    set('ppwStatB',    orders.length);
+    set('ppwStatBLbl', 'รายการ');
+    set('ppwPanelTitle', 'รายชื่อผู้ป่วย (' + patientIds.length + ' ราย)');
+
+    if (!patientIds.length) {
+      listEl.innerHTML = '<div class="ppw-empty">ไม่มีรายการใน' + roundLabel + '</div>';
+      return;
+    }
+
+    listEl.innerHTML = '<div class="ppw-list">' + patientIds.map(function(pid) {
+      var p   = patientMap[pid] || { name: pid, ward: '—', bed: '—' };
+      var oList = groups[pid];
+      var chips = oList.map(function(o) {
+        var d = drugMap[o.drugId] || { name: o.drugId, dose: '' };
+        var label = d.name + (d.dose ? ' ' + d.dose : '');
+        if (round === 'all') label += ' (' + (o.rounds || []).join('/') + ')';
+        return '<span class="ppw-chip">' + label + '</span>';
+      }).join('');
+      var initial = p.name ? p.name.replace(/^[^฀-๿]*/, '').charAt(0) : '?';
+      return '<div class="ppw-row">'
+        + '<div class="ppw-avatar">' + initial + '</div>'
+        + '<div class="ppw-row-body">'
+        +   '<div class="ppw-row-name">' + p.name + '</div>'
+        +   '<div class="ppw-row-meta">' + p.ward + ' · เตียง ' + p.bed + '</div>'
+        +   '<div class="ppw-chips">' + chips + '</div>'
+        + '</div>'
+        + '<div class="ppw-badge">' + oList.length + ' รายการ</div>'
+        + '</div>';
+    }).join('') + '</div>';
+
+  } else {
+    // type === 'medication' — group by drug
+    var groups = {};
+    orders.forEach(function(o) {
+      if (!groups[o.drugId]) groups[o.drugId] = [];
+      groups[o.drugId].push(o);
+    });
+    var drugIds = Object.keys(groups);
+    var uniquePatients = new Set(orders.map(function(o) { return o.patientId; })).size;
+
+    set('ppwStatA',    drugIds.length);
+    set('ppwStatALbl', 'ชนิดยา');
+    set('ppwStatB',    uniquePatients);
+    set('ppwStatBLbl', 'ผู้ป่วย');
+    set('ppwPanelTitle', 'รายการยา (' + drugIds.length + ' ชนิด)');
+
+    if (!drugIds.length) {
+      listEl.innerHTML = '<div class="ppw-empty">ไม่มีรายการใน' + roundLabel + '</div>';
+      return;
+    }
+
+    listEl.innerHTML = '<div class="ppw-list">' + drugIds.map(function(did) {
+      var d    = drugMap[did] || { name: did, dose: '', type: 'oral' };
+      var oList = groups[did];
+      var chips = oList.map(function(o) {
+        var p = patientMap[o.patientId] || { name: o.patientId };
+        return '<span class="ppw-chip blue">' + p.name + '</span>';
+      }).join('');
+      var icon  = d.type === 'iv' ? '💉' : '💊';
+      var typeStr = d.type === 'iv' ? 'ยาฉีด/IV' : 'ยากิน';
+      return '<div class="ppw-row">'
+        + '<div class="ppw-avatar drug">' + icon + '</div>'
+        + '<div class="ppw-row-body">'
+        +   '<div class="ppw-row-name">' + d.name + ' ' + (d.dose || '') + '</div>'
+        +   '<div class="ppw-row-meta">' + typeStr + '</div>'
+        +   '<div class="ppw-chips">' + chips + '</div>'
+        + '</div>'
+        + '<div class="ppw-badge">' + oList.length + ' คน</div>'
+        + '</div>';
+    }).join('') + '</div>';
+  }
+}
+
+
