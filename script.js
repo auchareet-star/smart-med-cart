@@ -46,8 +46,10 @@ function initCartPage() {
   set('cartInfoHwId',          'รหัส ' + MC_STATE.hardwareId);
   set('cartInfoStatName',      paired ? cart.name : '—');
   set('cartInfoStatHw',        MC_STATE.hardwareId);
-  set('cartInfoDrawerCount',   paired ? (MC_STATE.drawers.length || '—') : '—');
-  set('cartInfoCassetteCount', paired ? (MC_STATE.cassettes.length || '—') : '—');
+  const zone1DrawerIds = (MC_STATE.drawers || []).filter(d => d.zone === 1).map(d => d.id);
+  const zone1Cassettes = (MC_STATE.cassettes || []).filter(c => zone1DrawerIds.includes(c.drawerId));
+  set('cartInfoDrawerCount',   paired ? (zone1DrawerIds.length || '—') : '—');
+  set('cartInfoCassetteCount', paired ? (zone1Cassettes.length || '—') : '—');
   set('cartNavHwId',           MC_STATE.hardwareId || '—');
   set('cartNavName',           paired ? cart.name : '—');
 
@@ -65,14 +67,26 @@ function initCartPage() {
   if (tbody) {
     tbody.innerHTML = '';
     if (paired) {
-      DRAWERS.forEach(d => {
+      const stateDrawers  = MC_STATE.drawers  || [];
+      const stateCassettes = MC_STATE.cassettes || [];
+      // demo sensor offsets per drawer index
+      const tempOffsets = [0, 0.4, -0.3, 0, 0.4, -0.3, 0.2, -0.1];
+      const rhOffsets   = [0, 1,   3,   -1,  0,   1,   2,  -1];
+      stateDrawers.forEach((d, i) => {
+        const cassCount = stateCassettes.filter(c => c.drawerId === d.id).length;
+        const baseTemp  = 24.2;
+        const baseRh    = 48;
+        const dt = (baseTemp + tempOffsets[i % tempOffsets.length]).toFixed(1) + '°C';
+        const dr = (baseRh   + rhOffsets[i   % rhOffsets.length])   + '% RH';
+        const ct = (baseTemp + tempOffsets[i % tempOffsets.length] + 0.4).toFixed(1) + '°C';
+        const cr = (baseRh   + rhOffsets[i   % rhOffsets.length]   + 2)   + '% RH';
         tbody.insertAdjacentHTML('beforeend', `
           <tr>
-            <td><div class="drawer-id">${d.id}</div><div class="drawer-sub">${d.dc} Cassette</div></td>
-            <td class="temp-val">${d.dt}</td>
-            <td class="rh-val">${d.dr}</td>
-            <td class="temp-val">${d.ct}</td>
-            <td class="rh-val">${d.cr}</td>
+            <td><div class="drawer-id">${d.id}</div><div class="drawer-sub">${cassCount} Cassette</div></td>
+            <td class="temp-val">${dt}</td>
+            <td class="rh-val">${dr}</td>
+            <td class="temp-val">${ct}</td>
+            <td class="rh-val">${cr}</td>
             <td><span class="status-pill">ปกติ</span></td>
           </tr>`);
       });
@@ -350,11 +364,11 @@ const CART_TEMPLATES = [
     name: 'มาตรฐาน 5 ลิ้นชัก',
     createdBy: 'u0',
     drawers: [
-      { drawerNumber:1, label:'ยาสามัญ',    zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
-      { drawerNumber:2, label:'ยาเฉพาะ',    zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
-      { drawerNumber:3, label:'ยาฉีด',       zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
-      { drawerNumber:4, label:'ยาเด็ก',      zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
-      { drawerNumber:5, label:'ยาเฉพาะทาง', zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
+      { drawerNumber:1, label:'พื้นที่ทั่วไป',    zone:'ZONE1', rows:4, cols:5, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
+      { drawerNumber:2, label:'พื้นที่ควบคุม',   zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
+      { drawerNumber:3, label:'พื้นที่ควบคุม',   zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
+      { drawerNumber:4, label:'พื้นที่ทั่วไป',    zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
+      { drawerNumber:5, label:'พื้นที่ควบคุม',   zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST'] },
     ],
   },
   {
@@ -362,9 +376,9 @@ const CART_TEMPLATES = [
     name: 'รถเข็น ICU (3 ลิ้นชัก)',
     createdBy: 'u0',
     drawers: [
-      { drawerNumber:1, label:'ยา IV',        zone:'ZONE1', rows:2, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
-      { drawerNumber:2, label:'ยา IV สำรอง', zone:'ZONE1', rows:2, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
-      { drawerNumber:3, label:'ยากิน',        zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
+      { drawerNumber:1, label:'พื้นที่ควบคุม',  zone:'ZONE1', rows:2, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
+      { drawerNumber:2, label:'พื้นที่ควบคุม',  zone:'ZONE1', rows:2, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
+      { drawerNumber:3, label:'พื้นที่ทั่วไป',   zone:'ZONE1', rows:2, cols:2, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
     ],
   },
   {
@@ -372,8 +386,8 @@ const CART_TEMPLATES = [
     name: 'รถเข็นขนาดเล็ก (2 ลิ้นชัก)',
     createdBy: 'u0',
     drawers: [
-      { drawerNumber:1, label:'ยาสามัญ', zone:'ZONE1', rows:1, cols:3, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
-      { drawerNumber:2, label:'ยาเฉพาะ', zone:'ZONE1', rows:1, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
+      { drawerNumber:1, label:'พื้นที่ทั่วไป',  zone:'ZONE1', rows:1, cols:3, hasLock:true, allowedRoles:['PHARMACIST','NURSE'] },
+      { drawerNumber:2, label:'พื้นที่ควบคุม', zone:'ZONE1', rows:1, cols:3, hasLock:true, allowedRoles:['PHARMACIST'] },
     ],
   },
 ];
@@ -433,21 +447,21 @@ function seedMcData() {
   /* ───── Patients (10 — 5 Ward A + 5 Ward B/ICU) ────────── */
   MC_STATE.patients = [
     // Ward A — general
-    { id:'P1',  name:'นภา ใจดี',            ward:'Ward A', bed:'1',  age:65, condition:'เบาหวาน + ความดันสูง',         allergies:[] },
-    { id:'P2',  name:'วิชัย มานะ',          ward:'Ward A', bed:'5',  age:54, condition:'ปวดศีรษะเรื้อรัง',             allergies:['Aspirin'] },
-    { id:'P3',  name:'สมหญิง รักดี',        ward:'Ward A', bed:'8',  age:72, condition:'GERD + ปวดหลัง',               allergies:[] },
-    { id:'P7',  name:'อรุณ พิทักษ์',        ward:'Ward A', bed:'3',  age:48, condition:'ภูมิแพ้ + อักเสบ',             allergies:['Penicillin'] },
-    { id:'P8',  name:'ชลธี ศรีวรรณ',        ward:'Ward A', bed:'6',  age:60, condition:'ไขมันในเลือดสูง',              allergies:[] },
-    { id:'P11', name:'สุภาพร วงศ์ทอง',      ward:'Ward A', bed:'10', age:55, condition:'ความดันสูง + ไขมันในเลือด',    allergies:[] },
-    { id:'P12', name:'ธนวัฒน์ พิมพ์ทอง',   ward:'Ward A', bed:'11', age:42, condition:'ปอดอักเสบ + เจ็บคอ',           allergies:['Sulfa'] },
-    { id:'P13', name:'วรรณา สุขสม',          ward:'Ward A', bed:'12', age:68, condition:'เบาหวาน Type 2 + ความดัน',    allergies:[] },
-    { id:'P14', name:'ปิยะ ศรีสงคราม',       ward:'Ward A', bed:'15', age:51, condition:'หัวใจวาย + บวมน้ำ',           allergies:['Aspirin','Ibuprofen'] },
+    { id:'P1',  name:'นางนภา ใจดี',          hn:'6401101', gender:'หญิง', ward:'Ward A', bed:'3A-01', age:65, condition:'เบาหวาน + ความดันสูง',         allergies:[] },
+    { id:'P2',  name:'นายวิชัย มานะ',        hn:'6401234', gender:'ชาย',  ward:'Ward A', bed:'3A-05', age:54, condition:'ปวดศีรษะเรื้อรัง',             allergies:['Penicillin','Sulfonamides'] },
+    { id:'P3',  name:'นางสมหญิง รักดี',      hn:'6400892', gender:'หญิง', ward:'Ward A', bed:'3A-08', age:72, condition:'GERD + ปวดหลัง',               allergies:[] },
+    { id:'P7',  name:'นายอรุณ พิทักษ์',      hn:'6401567', gender:'ชาย',  ward:'Ward A', bed:'3A-03', age:48, condition:'ภูมิแพ้ + อักเสบ',             allergies:['Penicillin'] },
+    { id:'P8',  name:'นายชลธี ศรีวรรณ',      hn:'6401388', gender:'ชาย',  ward:'Ward A', bed:'3A-06', age:60, condition:'ไขมันในเลือดสูง',              allergies:[] },
+    { id:'P11', name:'นางสุภาพร วงศ์ทอง',    hn:'6401621', gender:'หญิง', ward:'Ward A', bed:'3A-10', age:55, condition:'ความดันสูง + ไขมันในเลือด',    allergies:[] },
+    { id:'P12', name:'นายธนวัฒน์ พิมพ์ทอง', hn:'6401742', gender:'ชาย',  ward:'Ward A', bed:'3A-11', age:42, condition:'ปอดอักเสบ + เจ็บคอ',           allergies:['Sulfa'] },
+    { id:'P13', name:'นางวรรณา สุขสม',        hn:'6401803', gender:'หญิง', ward:'Ward A', bed:'3A-12', age:68, condition:'เบาหวาน Type 2 + ความดัน',    allergies:[] },
+    { id:'P14', name:'นายปิยะ ศรีสงคราม',    hn:'6401955', gender:'ชาย',  ward:'Ward A', bed:'3A-15', age:51, condition:'หัวใจวาย + บวมน้ำ',            allergies:['Aspirin','Ibuprofen'] },
     // Ward B — ICU / critical
-    { id:'P4',  name:'ประสิทธิ์ เก่งกล้า',  ward:'Ward B', bed:'2',      age:60, condition:'ติดเชื้อรุนแรง',       allergies:[] },
-    { id:'P5',  name:'มานี แก้ว',            ward:'Ward B', bed:'4',      age:58, condition:'หัวใจขาดเลือด + DM',  allergies:['Sulfa'] },
-    { id:'P6',  name:'สุรชัย ดีงาม',         ward:'Ward B', bed:'7',      age:67, condition:'หลังผ่าตัด',          allergies:[] },
-    { id:'P9',  name:'พิมพา ราตรี',           ward:'Ward B', bed:'ICU-1', age:71, condition:'ภาวะช็อก',            allergies:[] },
-    { id:'P10', name:'ชาติชาย กล้าหาญ',      ward:'Ward B', bed:'ICU-2', age:53, condition:'หลอดเลือดสมอง',       allergies:[] },
+    { id:'P4',  name:'นายประสิทธิ์ เก่งกล้า', hn:'6400211', gender:'ชาย',  ward:'Ward B', bed:'ICU-02', age:60, condition:'ติดเชื้อรุนแรง',       allergies:[] },
+    { id:'P5',  name:'นางมานี แก้ว',           hn:'6400345', gender:'หญิง', ward:'Ward B', bed:'ICU-04', age:58, condition:'หัวใจขาดเลือด + DM',  allergies:['Sulfa'] },
+    { id:'P6',  name:'นายสุรชัย ดีงาม',        hn:'6400478', gender:'ชาย',  ward:'Ward B', bed:'ICU-07', age:67, condition:'หลังผ่าตัด',          allergies:[] },
+    { id:'P9',  name:'นางพิมพา ราตรี',          hn:'6400512', gender:'หญิง', ward:'Ward B', bed:'ICU-1',  age:71, condition:'ภาวะช็อก',            allergies:[] },
+    { id:'P10', name:'นายชาติชาย กล้าหาญ',    hn:'6400634', gender:'ชาย',  ward:'Ward B', bed:'ICU-2',  age:53, condition:'หลอดเลือดสมอง',       allergies:[] },
   ];
 
   /* ───── Orders (per patient based on condition) ────────── */
@@ -501,12 +515,14 @@ function seedMcData() {
     { id:'O35', patientId:'P13', drugId:'AMLO5',   rounds:['เช้า'],                  qty:1, status:'PENDING' },
     { id:'O36', patientId:'P13', drugId:'SIM10',   rounds:['ก่อนนอน'],              qty:1, status:'PENDING' },
     { id:'O37', patientId:'P13', drugId:'OMEP20',  rounds:['เช้า'],                  qty:1, status:'PENDING' },
+    { id:'O43', patientId:'P13', drugId:'INSREG',  rounds:['เช้า','เย็น'],           qty:1, status:'PENDING' },  // HIGH ALERT — insulin for DM
     // P14 ปิยะ (หัวใจวาย + บวมน้ำ) — all pending
     { id:'O38', patientId:'P14', drugId:'OMEP20',  rounds:['เช้า','เย็น'],           qty:1, status:'PENDING' },
     { id:'O39', patientId:'P14', drugId:'ATO20',   rounds:['ก่อนนอน'],              qty:1, status:'PENDING' },
     { id:'O40', patientId:'P14', drugId:'MET500',  rounds:['เช้า'],                  qty:1, status:'PENDING' },
     { id:'O41', patientId:'P14', drugId:'PARA500', rounds:['เช้า','กลางวัน','เย็น'], qty:1, status:'PENDING' },
     { id:'O42', patientId:'P14', drugId:'AMLO5',   rounds:['เช้า'],                  qty:1, status:'PENDING' },
+    { id:'O44', patientId:'P14', drugId:'HEP5K',   rounds:['เช้า','เย็น'],           qty:1, status:'PENDING' },  // HIGH ALERT — heparin for cardiac
   ];
 
   // Lock countdown timers (runtime only)
@@ -552,15 +568,15 @@ function seedMcData() {
     { ts:_m(18), cassetteId:'',    drugLabel:'',                   drawerId:'D6', action:'PATIENT_PACKED',    user:'ภก.สมชาย', patient:'นภา ใจดี',           patients:1 },
     { ts:_m(21), cassetteId:'',    drugLabel:'',                   drawerId:'D6', action:'PATIENT_PACKED',    user:'ภก.สมชาย', patient:'วิชัย มานะ',         patients:1 },
     { ts:_m(26), cassetteId:'C05', drugLabel:'Amoxicillin 250 mg', drawerId:'D2', action:'DISPENSED_PATIENT', user:'ภก.สมชาย', patient:'ธนวัฒน์ พิมพ์ทอง', qty:3 },
-    { ts:_m(28), cassetteId:null,  drugLabel:'',                   drawerId:'D2', action:'DRAWER_UNLOCKED',   user:'ภก.สมชาย', drawerName:'ลิ้นชัก 2 · ยาเฉพาะ',    userRole:'PHARMACIST', reason:'MANUAL' },
+    { ts:_m(28), cassetteId:null,  drugLabel:'',                   drawerId:'D2', action:'DRAWER_UNLOCKED',   user:'ภก.สมชาย', drawerName:'ลิ้นชัก 2 · พื้นที่ควบคุม',    userRole:'PHARMACIST', reason:'MANUAL' },
     { ts:_m(34), cassetteId:'C19', drugLabel:'Loratadine 10 mg',   drawerId:'D5', action:'RETURNED',          user:'ภก.สมชาย' },
     { ts:_m(35), cassetteId:'C07', drugLabel:'Prednisolone 5 mg',  drawerId:'D2', action:'REMOVED',           user:'ภก.สมชาย' },
     { ts:_m(39), cassetteId:'C19', drugLabel:'Loratadine 10 mg',   drawerId:'D5', action:'REMOVED',           user:'ภก.สมชาย' },
-    { ts:_m(45), cassetteId:null,  drugLabel:'',                   drawerId:'D5', action:'DRAWER_UNLOCKED',   user:'ภก.สมชาย', drawerName:'ลิ้นชัก 5 · ยาเฉพาะทาง', userRole:'PHARMACIST', reason:'MANUAL' },
+    { ts:_m(45), cassetteId:null,  drugLabel:'',                   drawerId:'D5', action:'DRAWER_UNLOCKED',   user:'ภก.สมชาย', drawerName:'ลิ้นชัก 5 · พื้นที่ควบคุม', userRole:'PHARMACIST', reason:'MANUAL' },
     { ts:_m(54), cassetteId:null,  drugLabel:'HIS Sync สำเร็จ',   drawerId:'—',  action:'HIS_SYNCED',        user:'ระบบ',      note:'38 orders · ONLINE' },
     { ts:_m(61), cassetteId:'C04', drugLabel:'Loratadine 10 mg',   drawerId:'D1', action:'REFILLED',          user:'ภก.สมชาย', added:15 },
     { ts:_m(68), cassetteId:'C03', drugLabel:'Ibuprofen 400 mg',   drawerId:'D1', action:'REMOVED',           user:'ภก.สมชาย' },
-    { ts:_m(76), cassetteId:null,  drugLabel:'',                   drawerId:'D1', action:'DRAWER_UNLOCKED',   user:'ภก.สมชาย', drawerName:'ลิ้นชัก 1 · ยาสามัญ',    userRole:'PHARMACIST', reason:'MANUAL' },
+    { ts:_m(76), cassetteId:null,  drugLabel:'',                   drawerId:'D1', action:'DRAWER_UNLOCKED',   user:'ภก.สมชาย', drawerName:'ลิ้นชัก 1 · พื้นที่ทั่วไป',    userRole:'PHARMACIST', reason:'MANUAL' },
     { ts:_m(90), cassetteId:null,  drugLabel:'เริ่ม Session ใหม่', drawerId:'—',  action:'SESSION_STARTED',   user:'ภก.สมชาย', note:'เภสัชกร' },
   ];
 
@@ -576,12 +592,12 @@ function buildCartA01Data(now) {
   // Template 1: 5 Zone 1 drawers × 4 cassettes + 1 Zone 2 drawer with 9 slots
   return {
     drawers: [
-      { id:'D1', name:'ลิ้นชัก 1 · ยาสามัญ',     zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
-      { id:'D2', name:'ลิ้นชัก 2 · ยาเฉพาะ',    zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
-      { id:'D3', name:'ลิ้นชัก 3 · ยาฉีด',       zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
-      { id:'D4', name:'ลิ้นชัก 4 · ยาเด็ก',      zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
-      { id:'D5', name:'ลิ้นชัก 5 · ยาเฉพาะทาง', zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
-      { id:'D6', name:'ลิ้นชัก 6 · จัดยาผู้ป่วย', zone:2, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
+      { id:'D1', name:'ลิ้นชัก 1 · พื้นที่ทั่วไป',         zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
+      { id:'D2', name:'ลิ้นชัก 2 · พื้นที่ควบคุม',         zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
+      { id:'D3', name:'ลิ้นชัก 3 · พื้นที่ควบคุม',         zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
+      { id:'D4', name:'ลิ้นชัก 4 · พื้นที่ทั่วไป',         zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
+      { id:'D5', name:'ลิ้นชัก 5 · พื้นที่ควบคุม',         zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
+      { id:'D6', name:'ลิ้นชัก 6 · พื้นที่จัดยาผู้ป่วย',     zone:2, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
     ],
     cassettes: [
       // D1 ยาสามัญ (20 cassettes)
@@ -610,6 +626,9 @@ function buildCartA01Data(now) {
       { id:'C06', drugId:'AMOX250', drawerId:'D2', slotNumber:2, quantity:22, maxQty:30, status:'IN',  removedAt:null, hasElectricLock:false, cassetteLockStatus:'UNLOCKED' },
       { id:'C07', drugId:'PRED5',   drawerId:'D2', slotNumber:3, quantity:8,  maxQty:30, status:'OUT', removedAt: now - 35 * 60 * 1000, removedBy:'ภก.สมชาย', hasElectricLock:true, cassetteLockStatus:'LOCKED' },
       { id:'C08', drugId:'PRED5',   drawerId:'D2', slotNumber:4, quantity:26, maxQty:30, status:'IN',  removedAt:null, hasElectricLock:false, cassetteLockStatus:'UNLOCKED' },
+      // HIGH ALERT — electric-locked
+      { id:'C21', drugId:'INSREG',  drawerId:'D2', slotNumber:5, quantity:8,  maxQty:10, status:'IN',  removedAt:null, hasElectricLock:true,  cassetteLockStatus:'LOCKED' },
+      { id:'C22', drugId:'HEP5K',   drawerId:'D2', slotNumber:6, quantity:12, maxQty:20, status:'IN',  removedAt:null, hasElectricLock:true,  cassetteLockStatus:'LOCKED' },
       // D3 ยาฉีด (mix oral + few IV)
       { id:'C09', drugId:'MET500',  drawerId:'D3', slotNumber:1, quantity:4,  maxQty:30, status:'IN',  removedAt:null, hasElectricLock:false, cassetteLockStatus:'UNLOCKED' },
       { id:'C10', drugId:'MET500',  drawerId:'D3', slotNumber:2, quantity:3,  maxQty:30, status:'IN',  removedAt:null, hasElectricLock:false, cassetteLockStatus:'UNLOCKED' },
@@ -656,10 +675,10 @@ function buildCartB01Data(now) {
   // Template 2 ICU: 3 Zone 1 drawers + 1 Zone 2 (D1 6 cass, D2 6 cass, D3 4 cass, D4 6 slots)
   return {
     drawers: [
-      { id:'D1', name:'ลิ้นชัก 1 · ยา IV',           zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
-      { id:'D2', name:'ลิ้นชัก 2 · ยา IV สำรอง',     zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
-      { id:'D3', name:'ลิ้นชัก 3 · ยากิน',           zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
-      { id:'D4', name:'ลิ้นชัก 4 · จัดยาผู้ป่วย ICU',zone:2, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
+      { id:'D1', name:'ลิ้นชัก 1 · พื้นที่ควบคุม',          zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
+      { id:'D2', name:'ลิ้นชัก 2 · พื้นที่ควบคุม',          zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
+      { id:'D3', name:'ลิ้นชัก 3 · พื้นที่ทั่วไป',          zone:1, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
+      { id:'D4', name:'ลิ้นชัก 4 · พื้นที่จัดยาผู้ป่วย',     zone:2, lockStatus:'LOCKED', unlockedBy:null, unlockedAt:null, autoLockAfter:30 },
     ],
     cassettes: [
       // D1 ยา IV
@@ -811,6 +830,129 @@ function sessionModeLabel() {
 }
 
 function getDrug(id) { return DRUG_LIST.find(d => d.id === id); }
+
+/* ─── Cassette info modal (clicked from Drawer Map) ─── */
+function openCassetteInfo(drawerId, slotNum) {
+  const overlay = document.getElementById('cassInfoOverlay');
+  const body    = document.getElementById('cassInfoBody');
+  if (!overlay || !body) return;
+
+  const cass    = (MC_STATE.cassettes || []).find(function(c) {
+    return c.drawerId === drawerId && c.slotNumber === slotNum;
+  });
+  const drawer  = (MC_STATE.drawers || []).find(function(d) { return d.id === drawerId; });
+  const isDone  = (typeof _PPD_DONE_CASSETTES !== 'undefined') &&
+                  _PPD_DONE_CASSETTES.has(drawerId + ':' + slotNum);
+  const drawerNum = drawerId.replace('D', '');
+
+  const svgPill = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>';
+  const svgIV   = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l1 5H7z"/><path d="M7 8a5 5 0 0 0 10 0"/><line x1="12" y1="13" x2="12" y2="18"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="12" y1="18" x2="12" y2="21"/></svg>';
+  const svgEmpty = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>';
+
+  if (!cass || !cass.drugId) {
+    var cart = MC_STATE.currentCartId ? getCart(MC_STATE.currentCartId) : null;
+    var cartShort = cart ? cart.id.replace('CART-', '').replace(/(\D+)(\d)/, '$1-$2') : 'A-1';
+    var wardName = (cart && cart.ward) || (MC_STATE.session && MC_STATE.session.wardName) || 'Ward 3A';
+
+    var modal = document.getElementById('cassInfoModal');
+    if (modal) modal.classList.add('cass-v2');
+
+    body.innerHTML =
+      '<div class="cass-info-v2">'
+      + '<div class="cass-info-v2-header">'
+      +   '<div class="cass-info-v2-avatar">C' + slotNum + '</div>'
+      +   '<div class="cass-info-v2-head-text">'
+      +     '<div class="cass-info-v2-eyebrow">CASSETTE DETAIL</div>'
+      +     '<div class="cass-info-v2-title">Drawer ' + drawerNum + ' · Cassette ' + slotNum + '</div>'
+      +     '<div class="cass-info-v2-tags">'
+      +       '<span class="cass-info-v2-tag tag-empty">ว่าง</span>'
+      +       '<span class="cass-info-v2-tag tag-info">ยังไม่ถูกจอง</span>'
+      +     '</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="cass-info-v2-body">'
+      +   '<div class="cass-info-v2-section">'
+      +     '<div class="cass-info-v2-section-title">รายละเอียดช่อง</div>'
+      +     '<div class="cass-info-v2-fields">'
+      +       '<div class="cass-info-v2-field"><span class="lbl">รถเข็น</span><span class="val">Med Cart ' + cartShort + '</span></div>'
+      +       '<div class="cass-info-v2-field"><span class="lbl">Ward</span><span class="val">' + wardName + '</span></div>'
+      +       '<div class="cass-info-v2-field"><span class="lbl">ตำแหน่ง</span><span class="val">Drawer ' + drawerNum + ' · Cassette ' + slotNum + '</span></div>'
+      +       '<div class="cass-info-v2-field"><span class="lbl">ประเภท</span><span class="val muted">ยังไม่ถูกจอง</span></div>'
+      +       '<div class="cass-info-v2-field"><span class="lbl">สถานะ</span><span class="val muted">ว่าง</span></div>'
+      +       '<div class="cass-info-v2-field"><span class="lbl">รายการยา</span><span class="val muted">—</span></div>'
+      +       '<div class="cass-info-v2-field"><span class="lbl">เวลาบันทึก</span><span class="val muted">—</span></div>'
+      +     '</div>'
+      +   '</div>'
+      +   '<div class="cass-info-v2-section">'
+      +     '<div class="cass-info-v2-section-title">รายการยาในช่องนี้</div>'
+      +     '<div class="cass-info-v2-empty-state">ช่องนี้ยังว่าง พร้อมเลือกใช้งาน</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="cass-info-v2-footer">'
+      +   '<button type="button" class="cass-info-v2-btn cass-info-v2-btn-secondary" onclick="closeCassetteInfo()">ดูทั้ง Drawer</button>'
+      +   '<button type="button" class="cass-info-v2-btn cass-info-v2-btn-primary" onclick="closeCassetteInfo()">ปิด</button>'
+      + '</div>'
+      + '</div>';
+    overlay.hidden = false;
+    return;
+  }
+
+  const drug = getDrug(cass.drugId);
+  const isIV = drug && drug.type === 'iv';
+  const unit = isIV ? 'ถุง' : 'เม็ด';
+  const max  = cass.maxQty || (drug && drug.max) || 30;
+
+  // Collect patients who receive this drug (filter by current ward)
+  const wardOrders   = _wardOrders().filter(function(o) { return o.drugId === cass.drugId; });
+  const patientMap   = {};
+  (MC_STATE.patients || []).forEach(function(p) { patientMap[p.id] = p; });
+  const totalDispense = wardOrders.reduce(function(s, o) { return s + (o.qty || 1); }, 0);
+  const patientCount  = (new Set(wardOrders.map(function(o) { return o.patientId; }))).size;
+
+  let statusPill;
+  if (isDone)                          statusPill = '<span class="cass-info-status-pill done">✓ จัดยาแล้ว</span>';
+  else if (cass.status === 'OUT')      statusPill = '<span class="cass-info-status-pill warn">ถูกนำออก</span>';
+  else if (cass.status === 'OUT_ALERT')statusPill = '<span class="cass-info-status-pill alert">ค้างนอกเกิน 30 นาที</span>';
+  else                                 statusPill = '<span class="cass-info-status-pill ok">พร้อมใช้</span>';
+
+  // Build patient rows (avatar initials + name + bed + qty)
+  const patientRowsHtml = wardOrders.map(function(o) {
+    const p    = patientMap[o.patientId] || { name: o.patientId, bed: '—' };
+    const init = p.name ? p.name.split(' ').slice(0,2).map(function(w) { return w.charAt(0); }).join('') : '?';
+    return '<div class="cass-info-pt-row">'
+      + '<div class="cass-info-pt-avatar">' + init + '</div>'
+      + '<div class="cass-info-pt-info">'
+      +   '<div class="cass-info-pt-name">' + (p.name || o.patientId) + '</div>'
+      +   '<div class="cass-info-pt-bed">เตียง ' + (p.bed || '—') + '</div>'
+      + '</div>'
+      + '<div class="cass-info-pt-qty">×' + (o.qty || 1) + ' ' + unit + '</div>'
+      + '</div>';
+  }).join('');
+
+  body.innerHTML =
+    '<div class="cass-info-head">'
+    + '<div class="cass-info-icon' + (isIV ? ' iv' : '') + '">' + (isIV ? svgIV : svgPill) + '</div>'
+    + '<div>'
+    +   '<div class="cass-info-name">' + (drug ? drug.name : cass.drugId) + '</div>'
+    +   '<div class="cass-info-dose">' + (drug ? drug.dose : '') + ' · ' + (isIV ? 'ยาฉีด/IV' : 'ยากิน') + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="cass-info-rows">'
+    +   '<div class="cass-info-row"><span class="cass-info-row-label">ตำแหน่ง</span><span class="cass-info-row-val">' + (drawer ? drawer.name : 'ลิ้นชัก ' + drawerNum) + ' · ช่อง ' + slotNum + '</span></div>'
+    +   '<div class="cass-info-row"><span class="cass-info-row-label">จ่ายให้ผู้ป่วย</span><span class="cass-info-row-val ok">' + patientCount + ' คน · ' + totalDispense + ' ' + unit + '</span></div>'
+    +   '<div class="cass-info-row"><span class="cass-info-row-label">สถานะ</span>' + statusPill + '</div>'
+    + '</div>';
+
+  overlay.hidden = false;
+}
+
+function closeCassetteInfo(e) {
+  if (e && e.target && e.target.id !== 'cassInfoOverlay') return;
+  const overlay = document.getElementById('cassInfoOverlay');
+  if (overlay) overlay.hidden = true;
+  const modal = document.getElementById('cassInfoModal');
+  if (modal) modal.classList.remove('cass-v2');
+}
 function getCassette(id) { return MC_STATE.cassettes.find(c => c.id === id); }
 function getDrawer(id) { return MC_STATE.drawers.find(d => d.id === id); }
 function drawerCassettes(drawerId) { return MC_STATE.cassettes.filter(c => c.drawerId === drawerId); }
@@ -1748,14 +1890,7 @@ function renderHisPanel() {
 
 /* ─── Entry: ใช้งานตามปกติ ──────────────────────────────────── */
 function startNormalFlow() {
-  if (MC_STATE.session.user) {
-    // already authenticated this session
-    location.hash = '#pg-prep-type';
-    return;
-  }
-  openSessionAuthModal(() => {
-    location.hash = '#pg-prep-type';
-  });
+  location.hash = '#pg-prep-type';
 }
 
 function openAdminLogin() {
@@ -2155,6 +2290,20 @@ function initAdminCartEdit() {
 
 function renderCartEdit(c) {
   const root = document.getElementById('cartEditRoot');
+  const hasCustom = !!(c.customDrawers);
+  const previewTpl = hasCustom
+    ? { id: '__preview__', name: c.name, drawers: c.customDrawers }
+    : getCartTemplate(c.templateId);
+
+  const sharedTemplates = CART_TEMPLATES.filter(t => !t.id.startsWith('__cart_'));
+
+  const customBadge = hasCustom
+    ? `<span style="font-size:11px;font-weight:600;color:var(--adm-dk);background:var(--adm-lt);padding:2px 8px;border-radius:10px;margin-left:6px;">เฉพาะรถนี้</span>`
+    : '';
+  const resetBtn = hasCustom
+    ? `<button type="button" class="mc-btn mc-btn-outline" style="font-size:12px;color:var(--text-2);" onclick="resetCartCustomDrawers('${c.id}')">คืนค่า Template</button>`
+    : '';
+
   root.innerHTML = `
     <div class="form-card">
       <div class="form-card-title">ข้อมูลรถเข็น</div>
@@ -2165,14 +2314,17 @@ function renderCartEdit(c) {
       <div class="cfg-field">
         <label>Template ที่ใช้</label>
         <select onchange="setCartTemplate('${c.id}', this.value); renderCartEdit(getCart('${c.id}'))">
-          ${CART_TEMPLATES.map(t => `<option value="${t.id}" ${c.templateId===t.id?'selected':''}>${t.name}</option>`).join('')}
+          ${sharedTemplates.map(t => `<option value="${t.id}" ${c.templateId===t.id?'selected':''}>${t.name}</option>`).join('')}
         </select>
       </div>
-      <div class="cfg-field">
-        <button type="button" class="mc-btn mc-btn-outline" onclick="editTemplate('${c.templateId}')">แก้ไข Template นี้</button>
+      <div style="display:flex;flex-direction:row;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button type="button" class="mc-btn mc-btn-outline" onclick="editCartTemplate('${c.id}')">
+          แก้ไขลิ้นชัก${customBadge}
+        </button>
+        ${resetBtn}
       </div>
     </div>
-    ${renderTemplatePreview(getCartTemplate(c.templateId))}
+    ${renderTemplatePreview(previewTpl)}
   `;
 }
 
@@ -2184,7 +2336,30 @@ function updateCartField(field, val) {
 /* ─── CFG-3 Template Editor ────────────────────────────────── */
 function editTemplate(id) {
   MC_STATE.editingTemplateId = id;
+  MC_STATE.editingCartTemplate = false;
   location.hash = '#pg-admin-template';
+}
+
+function editCartTemplate(cartId) {
+  const cart = getCart(cartId);
+  if (!cart) return;
+  const src = cart.customDrawers || (getCartTemplate(cart.templateId) || {}).drawers || [];
+  const drawers = JSON.parse(JSON.stringify(src));
+  const tmpId = '__cart_' + cartId;
+  const existIdx = CART_TEMPLATES.findIndex(t => t.id === tmpId);
+  if (existIdx !== -1) CART_TEMPLATES.splice(existIdx, 1);
+  CART_TEMPLATES.push({ id: tmpId, name: cart.name, drawers });
+  MC_STATE.editingTemplateId = tmpId;
+  MC_STATE.editingCartTemplate = true;
+  MC_STATE.editingCartId = cartId;
+  location.hash = '#pg-admin-template';
+}
+
+function resetCartCustomDrawers(cartId) {
+  const cart = getCart(cartId);
+  if (!cart) return;
+  delete cart.customDrawers;
+  renderCartEdit(cart);
 }
 
 function newTemplate() {
@@ -2211,16 +2386,21 @@ function initAdminTemplate() {
 
 function renderTemplateEdit(t) {
   const root = document.getElementById('templateEditRoot');
-  root.innerHTML = `
-    <div class="tmpl-edit-grid">
-      <div class="tmpl-edit-form">
+  const isCartMode = !!MC_STATE.editingCartTemplate;
+  const cancelTarget = isCartMode ? '#pg-admin-cart-edit' : '#pg-admin-carts';
+  const saveLabel    = isCartMode ? 'บันทึกลิ้นชัก' : 'บันทึก Template';
+  const nameField    = isCartMode ? '' : `
         <div class="form-card">
           <div class="form-card-title">ข้อมูล Template</div>
           <div class="cfg-field">
             <label>ชื่อ Template</label>
             <input type="text" value="${t.name}" oninput="updateTemplateName(this.value)" />
           </div>
-        </div>
+        </div>`;
+  root.innerHTML = `
+    <div class="tmpl-edit-grid">
+      <div class="tmpl-edit-form">
+        ${nameField}
         <div class="form-card">
           <div class="form-card-title-row">
             <div class="form-card-title">ลิ้นชัก (${t.drawers.length})</div>
@@ -2231,8 +2411,8 @@ function renderTemplateEdit(t) {
           <div class="drawer-builder" id="drawerBuilder"></div>
         </div>
         <div class="tmpl-actions">
-          <button type="button" class="mc-btn mc-btn-outline" onclick="location.hash='#pg-admin-carts'">ยกเลิก</button>
-          <button type="button" class="mc-btn mc-btn-primary" onclick="saveTemplate()">บันทึก Template</button>
+          <button type="button" class="mc-btn mc-btn-outline" onclick="location.hash='${cancelTarget}'">ยกเลิก</button>
+          <button type="button" class="mc-btn mc-btn-primary" onclick="saveTemplate()">${saveLabel}</button>
         </div>
       </div>
       <div class="tmpl-edit-preview">
@@ -2369,26 +2549,42 @@ function refreshTmplPreview() {
 
 function renderTemplatePreview(t) {
   if (!t) return '<div class="audit-empty">—</div>';
+  const zone1Drawers = t.drawers.filter(d => d.zone !== 'ZONE2');
+  const zone2Drawer  = t.drawers.find(d => d.zone === 'ZONE2');
+  const totalCassettes = zone1Drawers.reduce((s, d) => s + (d.rows||1) * (d.cols || d.cassetteSlots || 4), 0);
+  const totalPatientSlots = zone2Drawer ? (zone2Drawer.rows||1) * (zone2Drawer.cols || zone2Drawer.patientSlots || 6) : 0;
+
   return `
     <div class="tmpl-preview">
       <div class="tmpl-preview-name">${t.name}</div>
+      <div class="tmpl-preview-stats" style="display:flex;gap:8px;margin-bottom:4px;">
+        <span style="font-size:11px;font-weight:700;color:var(--adm-dk);background:var(--adm-lt);padding:2px 10px;border-radius:20px;">${zone1Drawers.length} ลิ้นชัก · ${totalCassettes} cassette</span>
+        ${totalPatientSlots ? `<span style="font-size:11px;font-weight:700;color:var(--text-2);background:var(--bg);border:1px solid var(--border);padding:2px 10px;border-radius:20px;">${totalPatientSlots} ช่องผู้ป่วย</span>` : ''}
+      </div>
       <div class="tmpl-preview-stack">
         ${t.drawers.map(d => {
+          const isZone2 = d.zone === 'ZONE2';
           const rows = d.rows || 1;
-          const cols = d.cols || d.cassetteSlots || 4;
+          const cols = d.cols || d.cassetteSlots || d.patientSlots || 4;
           const total = rows * cols;
-          const chips = Array.from({length: total}, (_, i) =>
-            `<span class="tmpl-prev-chip">C${i + 1}</span>`
-          ).join('');
+          const chips = isZone2
+            ? Array.from({length: total}, (_, i) =>
+                `<span class="tmpl-prev-chip" style="background:var(--bg);color:var(--text-3);border-color:var(--border);">S${i + 1}</span>`
+              ).join('')
+            : Array.from({length: total}, (_, i) =>
+                `<span class="tmpl-prev-chip">C${i + 1}</span>`
+              ).join('');
           const lockIcon = d.hasLock
             ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`
             : '';
+          const drawerClass = isZone2 ? 'tmpl-prev-drawer' : 'tmpl-prev-drawer tmpl-prev-zone1';
+          const slotLabel = isZone2 ? 'ช่องผู้ป่วย' : 'ช่อง';
           return `
-          <div class="tmpl-prev-drawer tmpl-prev-zone1">
+          <div class="${drawerClass}" style="${isZone2 ? 'border-left-color:var(--border);opacity:0.85;' : ''}">
             <div class="tmpl-prev-head">
-              <span class="tmpl-prev-num">D${d.drawerNumber}</span>
+              <span class="tmpl-prev-num" style="${isZone2 ? 'background:var(--text-3);' : ''}">D${d.drawerNumber}</span>
               <span class="tmpl-prev-label">${d.label}</span>
-              <span class="tmpl-prev-slots">${rows}×${cols} = ${total} ช่อง</span>
+              <span class="tmpl-prev-slots" style="${isZone2 ? 'color:var(--text-2);background:var(--bg);' : ''}">${rows}×${cols} = ${total} ${slotLabel}</span>
               ${lockIcon ? `<span class="tmpl-prev-lock">${lockIcon}</span>` : ''}
             </div>
             <div class="tmpl-prev-chips" style="grid-template-columns:repeat(${cols},1fr)">${chips}</div>
@@ -2401,8 +2597,26 @@ function renderTemplatePreview(t) {
 function saveTemplate() {
   const t = getCartTemplate(MC_STATE.editingTemplateId);
   if (!t) return;
-  // Validation
-  if (t.drawers.length === 0) { alert('Template ต้องมีลิ้นชักอย่างน้อย 1 อัน'); return; }
+  if (t.drawers.length === 0) { alert('ต้องมีลิ้นชักอย่างน้อย 1 อัน'); return; }
+
+  if (MC_STATE.editingCartTemplate) {
+    // Save drawers to the cart only — don't touch shared templates
+    const cart = getCart(MC_STATE.editingCartId);
+    if (cart) cart.customDrawers = JSON.parse(JSON.stringify(t.drawers));
+    // Remove temp template entry
+    const idx = CART_TEMPLATES.findIndex(x => x.id === t.id);
+    if (idx !== -1) CART_TEMPLATES.splice(idx, 1);
+    MC_STATE.editingCartTemplate = false;
+    MC_STATE.auditLog.unshift({
+      ts: Date.now(), action: 'CART_DRAWERS_UPDATED',
+      drugLabel: cart ? cart.name : '—', drawerId:'—',
+      user: 'Admin', note: `${t.drawers.length} ลิ้นชัก (เฉพาะรถ)`,
+    });
+    alert('บันทึกลิ้นชักเฉพาะรถเข็นเรียบร้อย');
+    location.hash = '#pg-admin-cart-edit';
+    return;
+  }
+
   const dup = CART_TEMPLATES.filter(x => x.name === t.name);
   if (dup.length > 1) { alert('ชื่อ Template ซ้ำกับ Template อื่น'); return; }
   MC_STATE.auditLog.unshift({
@@ -4070,7 +4284,7 @@ function openCartDetail() {
       ${row('ผู้รับผิดชอบ',         'ฝ่ายเทคนิคการแพทย์')}
       ${row('จำนวนการซ่อม (YTD)',  '2 ครั้ง')}
     </div>
-    <button type="button" class="cdm-reset-btn" onclick="resetDemo()">
+    <button type="button" class="cdm-reset-btn" onclick="resetCart()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
       Reset รถเข็น
     </button>`;
@@ -4088,12 +4302,8 @@ function closeCartDetail() {
   }
 }
 
-/* ─── Reset demo ────────────────────────────────────────────── */
-function resetDemo() {
-  localStorage.removeItem('mc_ward_id');
-  localStorage.removeItem('mc_user');
-  _selectedWard = null;
-  if (MC_STATE.session) MC_STATE.session.user = null;
+/* ─── Reset demo / cart ─────────────────────────────────────── */
+function resetCart() {
   const hwId = MC_STATE.hardwareId || 'MC-A-001';
   CARTS.forEach(c => { if (c.pairedHwId === hwId) c.pairedHwId = null; });
   closeCartDetail();
@@ -4103,6 +4313,23 @@ function resetDemo() {
   } else {
     location.hash = '#pg-cart';
   }
+}
+
+function resetDemo() {
+  // Disable saveNavState so the hashchange that follows can't overwrite
+  // the cleared sessionStorage with the still-populated in-memory state.
+  window.saveNavState = function() {};
+
+  // Clear ALL persisted state
+  try { localStorage.removeItem('mc_ward_id'); } catch {}
+  try { localStorage.removeItem('mc_user');    } catch {}
+  try { sessionStorage.clear(); } catch {}
+
+  // Navigate to landing page WITHOUT triggering history pollution, then
+  // hard-reload to guarantee fresh in-memory state.
+  var base = location.pathname + location.search;
+  location.replace(base + '#pg-cart');
+  location.reload();
 }
 
 /* ─── Dashboard init ────────────────────────────────────────── */
@@ -4126,40 +4353,72 @@ function initDashboard() {
 function renderDashHero(user) {
   const el = document.getElementById('dashHero');
   if (!el) return;
+  const orders = (MC_STATE.orders || []).filter(o => isPatientInCurrentCart(o.patientId));
+  const total = orders.length;
+  const done  = orders.filter(o => o.status === 'DONE' || o.status === 'SKIPPED').length;
+  const pct   = total ? Math.round(done / total * 100) : 0;
+
+  // Time-aware Thai greeting
+  const hr = new Date().getHours();
+  let greet = 'สวัสดีตอนเช้า', emoji = '☀️';
+  if      (hr >= 12 && hr < 17) { greet = 'สวัสดีตอนกลางวัน'; emoji = '🌤️'; }
+  else if (hr >= 17 && hr < 19) { greet = 'สวัสดีตอนเย็น';     emoji = '🌅'; }
+  else if (hr >= 19 || hr < 5)  { greet = 'สวัสดีตอนค่ำ';      emoji = '🌙'; }
+
   const cart = getCart(MC_STATE.currentCartId);
-  const total = (MC_STATE.orders || []).filter(o => isPatientInCurrentCart(o.patientId)).length;
-  const done = (MC_STATE.orders || []).filter(o => isPatientInCurrentCart(o.patientId) && (o.status === 'DONE' || o.status === 'SKIPPED')).length;
-  const pct = total ? Math.round(done / total * 100) : 0;
-  const statAlerts = (MC_STATE.cassettes||[]).filter(c=>c.status==='OUT_ALERT').length;
+  const cartName = cart ? cart.name : 'Med Cart';
+  const cartId   = MC_STATE.hardwareId || 'MC-A-001';
+
   el.innerHTML = `
-    <div class="hero-left">
-      <div class="hero-tag-row">
-        <div class="hero-tag">
-          <span class="hero-tag-dot"></span>
-          Ward 3A · หอผู้ป่วยอายุรกรรม
-        </div>
-        <div class="hero-tag hero-tag-role">${roleLabel(user.role)}</div>
-      </div>
-      <div class="hero-greet">สวัสดี, ${user.name}</div>
-      <div class="hero-sub">ยา ${total} รายการ · จ่ายแล้ว ${pct}%${statAlerts > 0 ? ` · <span style="color:#dc2626;font-weight:700;background:#fde8e8;padding:2px 8px;border-radius:6px;font-size:12px;">⚠ HA ${statAlerts}</span>` : ''}</div>
+    <div class="hero-blobs" aria-hidden="true">
+      <span class="hero-blob blob-1"></span>
+      <span class="hero-blob blob-2"></span>
+      <span class="hero-blob blob-3"></span>
     </div>
-    <div class="hero-right">
-      <div class="hero-cart-block">
-        <div class="hero-cart-block-name">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
-          ${cart ? cart.name : 'Med Cart'}
+    <div class="hero-content">
+      <div class="hero-row">
+        <div class="hero-left">
+          <div class="hero-greet-tag">
+            <span class="hero-greet-emoji">${emoji}</span>
+            <span>${greet}</span>
+          </div>
+          <div class="hero-greet">${user.name}</div>
+          <div class="hero-meta">
+            <span class="hero-chip">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Ward 3A · อายุรกรรม
+            </span>
+            <span class="hero-chip">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+              ${roleLabel(user.role)}
+            </span>
+          </div>
         </div>
-        <div class="hero-cart-block-divider"></div>
-        <div class="hero-cart-block-badges">
-          <span class="hero-cart-badge"><span class="hero-badge-dot"></span> Online</span>
-          <span class="hero-cart-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="16" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>
-            85%
-          </span>
-          <span class="hero-cart-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-            Wi-Fi
-          </span>
+        <div class="hero-cart-info">
+          <div class="hero-cart-info-head">
+            <span class="hero-cart-info-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg>
+            </span>
+            <div>
+              <div class="hero-cart-info-name">${cartName}</div>
+              <div class="hero-cart-info-id">รหัส ${cartId}</div>
+            </div>
+          </div>
+          <div class="hero-cart-info-row">
+            <span class="hero-cart-stat">
+              <span class="hero-cart-dot online"></span> Online
+            </span>
+            <span class="hero-cart-sep">·</span>
+            <span class="hero-cart-stat">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="16" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>
+              85%
+            </span>
+            <span class="hero-cart-sep">·</span>
+            <span class="hero-cart-stat">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+              Wi-Fi
+            </span>
+          </div>
         </div>
       </div>
     </div>`;
@@ -4175,9 +4434,9 @@ function renderDashChips() {
   const histN  = (MC_STATE.auditLog||[]).length;
   const offCart= (MC_STATE.cassettes||[]).filter(c=>c.status!=='IN').length;
   el.innerHTML = `
-    <span class="dash-chip dash-chip-red">
-      <span class="chip-icon">⏱</span> STAT ยาด่วน <b>${stat}</b>
-    </span>
+    <a href="#pg-dispense-dashboard" class="dash-chip dash-chip-purple" style="text-decoration:none;cursor:pointer;">
+      <span class="chip-icon">📊</span> MAR ภาพรวม <b>เปิด</b>
+    </a>
     <span class="dash-chip dash-chip-blue">
       <span class="chip-icon">📅</span> ตารางรอบยา <b>${rounds} รอบ</b>
     </span>
@@ -4204,14 +4463,7 @@ function renderDashFocus() {
 
   let variant, eyebrow, title, sub, btnLabel, btnAction;
 
-  if (statAlerts > 0) {
-    variant   = 'focus-urgent';
-    eyebrow   = 'ต้องดำเนินการทันที';
-    title     = `มียาด่วน (STAT) ${statAlerts} รายการ`;
-    sub       = 'ยาด่วนต้องจัดการก่อนทุกอย่าง';
-    btnLabel  = 'จัดการยาด่วน';
-    btnAction = 'startNormalFlow()';
-  } else if (pending > 0) {
+  if (pending > 0) {
     variant   = 'focus-dispense';
     eyebrow   = `รอบ${cur} · ${roundTimes[cur] || ''}`;
     title     = `ผู้ป่วยรอรับยา ${pending} รายการ`;
@@ -4258,43 +4510,51 @@ function renderDashActions() {
   if (!el) return;
   const refillCount = (MC_STATE.cassettes||[]).filter(c=>c.status!=='IN').length;
   const dispCount = (MC_STATE.orders||[]).filter(o=>isPatientInCurrentCart(o.patientId) && o.status==='PENDING').length;
+  const svgArrow = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
   el.innerHTML = `
-    <button type="button" class="action-card action-card-orange" onclick="startNormalFlow()">
-      <div class="action-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button type="button" class="action-card-v2 action-teal" onclick="startNormalFlow()">
+      <div class="action-bg" aria-hidden="true"></div>
+      <div class="action-icon-v2">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
         </svg>
       </div>
-      <div class="action-text">
-        <div class="action-name">จัดยาเข้ารถเข็น</div>
+      <div class="action-text-v2">
+        <div class="action-name-v2">จัดยาเข้ารถเข็น</div>
+        <div class="action-sub-v2">Medication Preparation</div>
       </div>
-      ${refillCount > 0 ? `<span class="action-badge">${refillCount} รอจัด</span>` : ''}
+      ${refillCount > 0 ? `<span class="action-badge-v2 amber">${refillCount}</span>` : ''}
+      <div class="action-arrow">${svgArrow}</div>
     </button>
 
-    <button type="button" class="action-card action-card-red" onclick="alert('Dispense — ดู flow ที่ Mode A/B')">
-      <div class="action-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <button type="button" class="action-card-v2 action-coral" onclick="location.hash='#pg-dispense-rounds'">
+      <div class="action-bg" aria-hidden="true"></div>
+      <div class="action-icon-v2">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
         </svg>
       </div>
-      <div class="action-text">
-        <div class="action-name">จ่ายยาให้ผู้ป่วย</div>
+      <div class="action-text-v2">
+        <div class="action-name-v2">จ่ายยาให้ผู้ป่วย</div>
+        <div class="action-sub-v2">Medication Administration</div>
       </div>
-      ${dispCount > 0 ? `<span class="action-badge action-badge-red">${dispCount} รอจ่าย</span>` : ''}
+      ${dispCount > 0 ? `<span class="action-badge-v2 red">${dispCount}</span>` : ''}
+      <div class="action-arrow">${svgArrow}</div>
     </button>
 
-    <button type="button" class="action-card action-card-pink" onclick="alert('PRN — coming soon')">
-      <div class="action-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    <a href="#pg-dispense-dashboard" class="action-card-v2 action-violet" style="text-decoration:none;color:inherit;">
+      <div class="action-bg" aria-hidden="true"></div>
+      <div class="action-icon-v2">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3v18h18"/><polyline points="7 14 11 10 15 14 21 8"/>
         </svg>
       </div>
-      <div class="action-text">
-        <div class="action-name">เติมยาสำรอง (PRN)</div>
+      <div class="action-text-v2">
+        <div class="action-name-v2">รายงานการจ่ายยา</div>
+        <div class="action-sub-v2">Medication Administration Record</div>
       </div>
-    </button>
-
-    `;
+      <div class="action-arrow">${svgArrow}</div>
+    </a>`;
 }
 
 function renderDashTeam() {
@@ -4348,7 +4608,21 @@ function renderDashInventory() {
 
     const cells = Array.from({length: totalSlots}, (_, i) => {
       const slotNum = i + 1;
-      return `<div class="inv-cell inv-cell-empty" title="ช่อง ${slotNum} · ว่าง">
+      const cass    = cassBySlot[slotNum];
+      const isDone  = (typeof _PPD_DONE_CASSETTES !== 'undefined') &&
+                      _PPD_DONE_CASSETTES.has(d.id + ':' + slotNum);
+      const hasCass = cass && cass.drugId;
+      // All slots are clickable — empty slots open the empty-state modal
+      const clickAttr = ` onclick="openCassetteInfo('${d.id}',${slotNum})" style="cursor:pointer;"`;
+
+      if (isDone) {
+        return `<div class="inv-cell inv-cell-done"${clickAttr} title="ช่อง ${slotNum} · จัดยาแล้ว · กดดูรายละเอียด">
+          <span class="inv-cell-done-mark"><svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+          <span class="inv-cell-slot">${slotNum}</span>
+        </div>`;
+      }
+      const cellCls = hasCass ? 'inv-cell-filled' : 'inv-cell-empty';
+      return `<div class="inv-cell ${cellCls}"${clickAttr} title="ช่อง ${slotNum}${hasCass ? ' · กดดูรายละเอียด' : ' · ว่าง · กดดูรายละเอียด'}">
         <span class="inv-cell-dot"></span>
         <span class="inv-cell-slot">${slotNum}</span>
       </div>`;
@@ -4485,45 +4759,37 @@ function renderDashStats() {
   const pendingPct = total ? Math.round(pending / total * 100) : 0;
 
   el.innerHTML = `
-    <div class="dash-stat dash-stat-indigo">
+    <div class="dash-stat tone-indigo">
       <div class="dash-stat-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
-      <div class="dash-stat-body">
-        <div class="dash-stat-label">ผู้ป่วย</div>
-        <div class="dash-stat-sub">Ward 3A ทั้งหมด</div>
-      </div>
-      <div class="dash-stat-val">${patients}</div>
+      <div class="dash-stat-num">${patients}</div>
+      <div class="dash-stat-label">ผู้ป่วย</div>
+      <div class="dash-stat-sub">Ward 3A · อายุรกรรม</div>
     </div>
-    <div class="dash-stat dash-stat-teal">
+    <div class="dash-stat tone-teal">
       <div class="dash-stat-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
       </div>
-      <div class="dash-stat-body">
-        <div class="dash-stat-label">รายการยา</div>
-        <div class="dash-stat-sub">HIS + Manual</div>
-      </div>
-      <div class="dash-stat-val">${total}</div>
+      <div class="dash-stat-num">${total}</div>
+      <div class="dash-stat-label">รายการยา</div>
+      <div class="dash-stat-sub">HIS + Manual</div>
     </div>
-    <div class="dash-stat dash-stat-blue">
+    <div class="dash-stat tone-green">
       <div class="dash-stat-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <div class="dash-stat-body">
-        <div class="dash-stat-label">จ่ายแล้ว</div>
-        <div class="dash-stat-sub">${donePct}% ของทั้งหมด</div>
-      </div>
-      <div class="dash-stat-val">${done}</div>
+      <div class="dash-stat-num">${done}</div>
+      <div class="dash-stat-label">จ่ายแล้ว</div>
+      <div class="dash-stat-sub">${donePct}% ของรายการทั้งหมด</div>
     </div>
-    <div class="dash-stat dash-stat-orange">
+    <div class="dash-stat tone-amber">
       <div class="dash-stat-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
-      <div class="dash-stat-body">
-        <div class="dash-stat-label">รอจ่าย</div>
-        <div class="dash-stat-sub">${pendingPct}% ของทั้งหมด</div>
-      </div>
-      <div class="dash-stat-val">${pending}</div>
+      <div class="dash-stat-num">${pending}</div>
+      <div class="dash-stat-label">รอจ่าย</div>
+      <div class="dash-stat-sub">${pendingPct}% ของรายการทั้งหมด</div>
     </div>`;
 }
 
@@ -4628,6 +4894,14 @@ const _STATE_KEYS = ['isAdmin','currentCartId','currentPatientId','currentDrugId
 function saveNavState() {
   const snap = {};
   _STATE_KEYS.forEach(k => { if (MC_STATE[k] !== undefined) snap[k] = MC_STATE[k]; });
+  // Save standalone prep-flow variables
+  snap._ppwDetail        = _PPW_DETAIL;
+  snap._prepType         = selectedPrepType;
+  snap._prepRound        = selectedPrepRound;
+  snap._ppdDrawer        = _PPD_SELECTED_DRAWER;
+  snap._ppdCassette      = _PPD_SELECTED_CASSETTE;
+  snap._ppwDoneSet       = Array.from(_PPW_DONE_SET || []);
+  snap._ppdDoneCassettes = Array.from(_PPD_DONE_CASSETTES || []);
   try { sessionStorage.setItem('mc_nav', JSON.stringify(snap)); } catch {}
 }
 
@@ -4635,6 +4909,14 @@ function restoreNavState() {
   try {
     const snap = JSON.parse(sessionStorage.getItem('mc_nav') || '{}');
     _STATE_KEYS.forEach(k => { if (snap[k] !== undefined) MC_STATE[k] = snap[k]; });
+    // Restore standalone prep-flow variables
+    if (snap._ppwDetail)        { _PPW_DETAIL.type = snap._ppwDetail.type; _PPW_DETAIL.id = snap._ppwDetail.id; _PPW_DETAIL.orderIds = snap._ppwDetail.orderIds || []; }
+    if (snap._prepType  != null) selectedPrepType  = snap._prepType;
+    if (snap._prepRound != null) selectedPrepRound = snap._prepRound;
+    if (snap._ppdDrawer   != null) _PPD_SELECTED_DRAWER   = snap._ppdDrawer;
+    if (snap._ppdCassette != null) _PPD_SELECTED_CASSETTE = snap._ppdCassette;
+    if (snap._ppwDoneSet)       _PPW_DONE_SET       = new Set(snap._ppwDoneSet);
+    if (snap._ppdDoneCassettes) _PPD_DONE_CASSETTES = new Set(snap._ppdDoneCassettes);
   } catch {}
 }
 
@@ -4668,6 +4950,14 @@ function initPage() {
   initAudit();
   initPrepType();
   initPrepWork();
+  initPrepDrawer();
+  initScanDrug();
+  initDispenseRounds();
+  initDispenseQueue();
+  initDispenseVerify();
+  initDispenseAdminister();
+  initDispenseSummary();
+  initDispenseDashboard();
 }
 
 
@@ -4708,9 +4998,9 @@ function renderPrepTypePage() {
 
   // Type cards
   set('ptpChipPatients',  patients + ' ผู้ป่วย');
-  set('ptpChipOrders',    allRound + ' ครั้ง');
+  set('ptpChipOrders',    allRound + ' รายการ');
   set('ptpChipDrugs',     drugs + ' ชนิดยา');
-  set('ptpChipOrdersMed', allRound + ' ครั้ง');
+  set('ptpChipOrdersMed', patients + ' ผู้ป่วย');
 
   // Round totals
   set('ptpNumAllRounds', allRound);
@@ -4736,7 +5026,7 @@ function showToast(msg) {
 let selectedPrepType = null;
 let selectedPrepRound = null;
 
-const _PTP_TYPE_LABELS  = { patient: 'จัดยาตามผู้ป่วย', medication: 'จัดยาตามรายการยา' };
+const _PTP_TYPE_LABELS  = { patient: 'จัดยาตามผู้ป่วย', medication: 'จัดยาสามัญ' };
 const _PTP_ROUND_LABELS = { all: 'ทุกรอบเวลา', morning: 'รอบเช้า', noon: 'รอบเที่ยง', evening: 'รอบเย็น', bedtime: 'ก่อนนอน' };
 
 function selectPrepType(type) {
@@ -4744,30 +5034,37 @@ function selectPrepType(type) {
   selectedPrepRound = null;
 
   // update type card selection
-  ['ptpCardPatient','ptpCardMedication'].forEach(id => {
+  const cardMap = { patient: 'ptpCardPatient', medication: 'ptpCardMedication' };
+  Object.values(cardMap).forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.classList.toggle('selected', id === 'ptpCard' + (type === 'patient' ? 'Patient' : 'Medication'));
+    if (el) el.classList.toggle('selected', id === cardMap[type]);
   });
   const status = document.getElementById('ptpTypeStatus');
   if (status) status.textContent = '✓ ' + _PTP_TYPE_LABELS[type];
 
-  // unlock round panel
-  const lock = document.getElementById('ptpRoundLock');
-  const content = document.getElementById('ptpRoundContent');
-  if (lock)    lock.style.display = 'none';
-  if (content) content.style.display = 'block';
+  const lock       = document.getElementById('ptpRoundLock');
+  const content    = document.getElementById('ptpRoundContent');
+  const rs         = document.getElementById('ptpRoundStatus');
+  const roundPanel = document.getElementById('ptpRoundPanel');
 
-  // reset round selection
-  ['ptpRoundAll','ptpRoundMorning','ptpRoundNoon','ptpRoundEvening','ptpRoundBedtime'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('selected');
-  });
-  const rs = document.getElementById('ptpRoundStatus');
-  if (rs) rs.textContent = 'เลือก 1 รอบ';
-
-  // step indicators
-  const s1 = document.getElementById('ptpStep1'); if (s1) { s1.classList.remove('active'); s1.classList.add('done'); }
-  const s2 = document.getElementById('ptpStep2'); if (s2) { s2.classList.add('active'); s2.classList.remove('done'); }
+  if (type === 'medication') {
+    if (roundPanel) roundPanel.style.display = 'none';
+    selectedPrepRound = 'all';
+    const s1 = document.getElementById('ptpStep1'); if (s1) { s1.classList.remove('active'); s1.classList.add('done'); }
+    const s2 = document.getElementById('ptpStep2'); if (s2) { s2.classList.add('done'); s2.classList.remove('active'); }
+    const s3 = document.getElementById('ptpStep3'); if (s3) s3.classList.add('active');
+  } else {
+    if (roundPanel) roundPanel.style.display = '';
+    if (lock)    lock.style.display = 'none';
+    if (content) content.style.display = 'block';
+    ['ptpRoundAll','ptpRoundMorning','ptpRoundNoon','ptpRoundEvening','ptpRoundBedtime'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('selected');
+    });
+    if (rs) rs.textContent = 'เลือก 1 รอบ';
+    const s1 = document.getElementById('ptpStep1'); if (s1) { s1.classList.remove('active'); s1.classList.add('done'); }
+    const s2 = document.getElementById('ptpStep2'); if (s2) { s2.classList.add('active'); s2.classList.remove('done'); }
+  }
 
   _ptpUpdateConfirmBar();
 }
@@ -4793,11 +5090,14 @@ function selectPrepRound(round) {
 function _ptpUpdateConfirmBar() {
   const summary = document.getElementById('ptpConfirmSummary');
   const btn     = document.getElementById('ptpConfirmBtn');
-  const ready   = !!(selectedPrepType && selectedPrepRound);
+  const isMedication = selectedPrepType === 'medication';
+  const ready = !!(selectedPrepType && (isMedication || selectedPrepRound));
   if (btn) btn.disabled = !ready;
   if (summary) {
     if (!selectedPrepType) {
       summary.textContent = 'เลือกประเภทและรอบเวลา';
+    } else if (isMedication) {
+      summary.textContent = 'จัดยาสามัญ · จัดยาสำรองในรถ';
     } else if (!selectedPrepRound) {
       summary.textContent = _PTP_TYPE_LABELS[selectedPrepType] + ' · เลือกรอบเวลา';
     } else {
@@ -4807,7 +5107,8 @@ function _ptpUpdateConfirmBar() {
 }
 
 function confirmPrepFlow() {
-  if (!selectedPrepType || !selectedPrepRound) return;
+  if (!selectedPrepType) return;
+  if (selectedPrepType !== 'medication' && !selectedPrepRound) return;
   goToPrepFlow(selectedPrepType, selectedPrepRound);
 }
 
@@ -4829,6 +5130,8 @@ function initPrepType() {
   ['ptpCardPatient','ptpCardMedication'].forEach(id => {
     const el = document.getElementById(id); if (el) el.classList.remove('selected');
   });
+  const roundPanel = document.getElementById('ptpRoundPanel');
+  if (roundPanel) roundPanel.style.display = '';
   const ts = document.getElementById('ptpTypeStatus'); if (ts) ts.textContent = 'เลือก 1 รูปแบบ';
 
   // lock round panel
@@ -4857,9 +5160,12 @@ function initPrepType() {
 
 /* ── pg-prep-work ─────────────────────────────────────────── */
 const _PPW_ROUND_MAP = { morning:'เช้า', noon:'กลางวัน', evening:'เย็น', bedtime:'ก่อนนอน' };
+var _PPW_DONE_SET = new Set();
+var _PPW_DETAIL = { type: null, id: null, orderIds: [] };
 
 function initPrepWork() {
   if (location.hash.replace('#','') !== 'pg-prep-work') return;
+  if (!_PPW_DONE_SET) _PPW_DONE_SET = new Set();
   seedMcData();
   renderPrepWorkPage();
 }
@@ -4887,9 +5193,9 @@ function renderPrepWorkPage() {
 
   // update hero
   const set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
-  set('ppwTitle',    typeLabel);
-  set('ppwSub',      roundLabel);
-  set('ppwNavSub',   typeLabel + ' · ' + roundLabel);
+  set('ppwTitle',  typeLabel);
+  set('ppwSub',    roundLabel);
+  set('ppwNavSub', typeLabel + ' · ' + roundLabel);
 
   var listEl = document.getElementById('ppwList');
   if (!listEl) return;
@@ -4923,20 +5229,24 @@ function renderPrepWorkPage() {
         if (round === 'all') label += ' (' + (o.rounds || []).join('/') + ')';
         return '<span class="ppw-chip">' + label + '</span>';
       }).join('');
-      var initial = p.name ? p.name.replace(/^[^฀-๿]*/, '').charAt(0) : '?';
-      return '<div class="ppw-row">'
-        + '<div class="ppw-avatar">' + initial + '</div>'
+      var svgPatient = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-1a6 6 0 0 1 12 0v1"/></svg>';
+      var svgDone    = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>';
+      var isDone = _PPW_DONE_SET.has('patient:' + pid);
+      var doneClass = isDone ? ' ppw-row-done' : '';
+      var orderIds = oList.map(function(o) { return o.id; }).join(',');
+      return '<div class="ppw-row' + doneClass + '" onclick="openPrepDetail(\'patient\',\'' + pid + '\',\'' + orderIds + '\')">'
+        + '<div class="ppw-avatar">' + (isDone ? svgDone : svgPatient) + '</div>'
         + '<div class="ppw-row-body">'
         +   '<div class="ppw-row-name">' + p.name + '</div>'
         +   '<div class="ppw-row-meta">' + p.ward + ' · เตียง ' + p.bed + '</div>'
         +   '<div class="ppw-chips">' + chips + '</div>'
         + '</div>'
-        + '<div class="ppw-badge">' + oList.length + ' รายการ</div>'
+        + '<div class="ppw-badge">' + (isDone ? 'จัดแล้ว' : oList.length + ' รายการ') + '</div>'
         + '</div>';
     }).join('') + '</div>';
 
-  } else {
-    // type === 'medication' — group by drug
+  } else if (type === 'medication') {
+    // จัดยาสามัญ — group orders by drug
     var groups = {};
     orders.forEach(function(o) {
       if (!groups[o.drugId]) groups[o.drugId] = [];
@@ -4949,33 +5259,2743 @@ function renderPrepWorkPage() {
     set('ppwStatALbl', 'ชนิดยา');
     set('ppwStatB',    uniquePatients);
     set('ppwStatBLbl', 'ผู้ป่วย');
-    set('ppwPanelTitle', 'รายการยา (' + drugIds.length + ' ชนิด)');
+    set('ppwPanelTitle', 'จัดยาสามัญ (' + drugIds.length + ' ชนิด)');
 
     if (!drugIds.length) {
-      listEl.innerHTML = '<div class="ppw-empty">ไม่มีรายการใน' + roundLabel + '</div>';
+      listEl.innerHTML = '<div class="ppw-empty">ไม่มีรายการยาสามัญ</div>';
       return;
     }
 
+    var svgPill = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>';
+    var svgIV   = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l1 5H7z"/><path d="M7 8a5 5 0 0 0 10 0"/><line x1="12" y1="13" x2="12" y2="18"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="12" y1="18" x2="12" y2="21"/></svg>';
+    var svgDoneDrug = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>';
+
     listEl.innerHTML = '<div class="ppw-list">' + drugIds.map(function(did) {
-      var d    = drugMap[did] || { name: did, dose: '', type: 'oral' };
+      var d     = drugMap[did] || { name: did, dose: '', type: 'oral' };
       var oList = groups[did];
-      var chips = oList.map(function(o) {
-        var p = patientMap[o.patientId] || { name: o.patientId };
-        return '<span class="ppw-chip blue">' + p.name + '</span>';
-      }).join('');
-      var icon  = d.type === 'iv' ? '💉' : '💊';
       var typeStr = d.type === 'iv' ? 'ยาฉีด/IV' : 'ยากิน';
-      return '<div class="ppw-row">'
-        + '<div class="ppw-avatar drug">' + icon + '</div>'
+      var isDone  = _PPW_DONE_SET.has('drug:' + did);
+      var doneClass = isDone ? ' ppw-row-done' : '';
+      var orderIds = oList.map(function(o) { return o.id; }).join(',');
+      var drugIcon = isDone ? svgDoneDrug : (d.type === 'iv' ? svgIV : svgPill);
+      return '<div class="ppw-row' + doneClass + '" onclick="openPrepDetail(\'drug\',\'' + did + '\',\'' + orderIds + '\')">'
+        + '<div class="ppw-avatar drug">' + drugIcon + '</div>'
         + '<div class="ppw-row-body">'
-        +   '<div class="ppw-row-name">' + d.name + ' ' + (d.dose || '') + '</div>'
+        +   '<div class="ppw-row-name">' + d.name + (d.dose ? ' ' + d.dose : '') + '</div>'
         +   '<div class="ppw-row-meta">' + typeStr + '</div>'
-        +   '<div class="ppw-chips">' + chips + '</div>'
         + '</div>'
-        + '<div class="ppw-badge">' + oList.length + ' คน</div>'
+        + '<div class="ppw-badge">' + (isDone ? 'จัดแล้ว' : oList.length + ' คน') + '</div>'
         + '</div>';
     }).join('') + '</div>';
+
   }
 }
 
+/* ── pg-prep-drawer (Drawer Map page) ────────────────────── */
 
+function openPrepDetail(type, id, orderIdsStr) {
+  _PPW_DETAIL.type     = type;
+  _PPW_DETAIL.id       = id;
+  _PPW_DETAIL.orderIds = orderIdsStr ? orderIdsStr.split(',') : [];
+  location.hash = '#pg-prep-drawer';
+}
+
+/* pg-prep-drawer state */
+var _PPD_SELECTED_DRAWER   = null;
+var _PPD_SELECTED_CASSETTE = null;
+var _PPD_DONE_CASSETTES    = new Set(); // 'D1:3' format — persists across drawer page visits
+
+function initPrepDrawer() {
+  if (location.hash.replace('#','') !== 'pg-prep-drawer') return;
+  _PPD_SELECTED_DRAWER   = null;
+  _PPD_SELECTED_CASSETTE = null;
+  seedMcData();
+  _renderPrepDrawerPage();
+}
+
+function _renderPrepDrawerPage() {
+  var type     = _PPW_DETAIL.type;
+  var id       = _PPW_DETAIL.id;
+  var orderIds = _PPW_DETAIL.orderIds;
+
+  var drugMap = {};
+  DRUG_LIST.forEach(function(d) { drugMap[d.id] = d; });
+  var patientMap = {};
+  (MC_STATE.patients || []).forEach(function(p) { patientMap[p.id] = p; });
+
+  var orders = (MC_STATE.orders || []).filter(function(o) {
+    return orderIds.indexOf(o.id) !== -1;
+  });
+  var neededDrugIds = [];
+  orders.forEach(function(o) {
+    if (neededDrugIds.indexOf(o.drugId) === -1) neededDrugIds.push(o.drugId);
+  });
+
+  var drawers1  = (MC_STATE.drawers  || []).filter(function(d) { return d.zone === 1; });
+  var cassettes = MC_STATE.cassettes || [];
+
+  // ── Hero banner ──
+  if (type === 'patient') {
+    var p = patientMap[id] || { name: id, ward: '—', bed: '—', hn: '—', gender: '—', age: '—', allergies: [] };
+    var badgeLabel = (selectedPrepType === 'medication') ? 'Medication-based' : 'Patient-based';
+
+    var nameEl = document.getElementById('ppdName');
+    if (nameEl) nameEl.textContent = p.name || '—';
+
+    var metaEl = document.getElementById('ppdMeta');
+    if (metaEl) metaEl.textContent = 'HN: ' + (p.hn || '—') + ' · เตียง ' + (p.bed || '—') + ' · ' + (p.gender || '—') + ', ' + (p.age || '—') + ' ปี';
+
+    var allergyRow = document.getElementById('ppdAllergyRow');
+    var allergyText = document.getElementById('ppdAllergyText');
+    if (allergyRow) {
+      var hasAllergy = p.allergies && p.allergies.length > 0;
+      allergyRow.style.display = hasAllergy ? '' : 'none';
+      if (allergyText && hasAllergy) allergyText.textContent = p.allergies.join(', ');
+    }
+
+    var badgeEl = document.getElementById('ppdBadge');
+    if (badgeEl) badgeEl.lastChild.textContent = badgeLabel;
+
+  } else {
+    // Medication-based
+    var drug = drugMap[id] || { name: id, dose: '', type: 'oral' };
+    var nameEl2 = document.getElementById('ppdName');
+    if (nameEl2) nameEl2.textContent = drug.name + (drug.dose ? ' ' + drug.dose : '');
+    var metaEl2 = document.getElementById('ppdMeta');
+    if (metaEl2) metaEl2.textContent = drug.type === 'iv' ? 'ยาฉีด / IV' : 'ยากิน / Oral';
+    var badgeEl2 = document.getElementById('ppdBadge');
+    if (badgeEl2) badgeEl2.lastChild.textContent = 'Medication-based';
+  }
+
+  // ── Hero stats ──
+  var statOrders = document.getElementById('ppdStatOrders');
+  if (statOrders) statOrders.textContent = orders.length;
+  var statDrawers = document.getElementById('ppdStatDrawers');
+  if (statDrawers) {
+    var neededDrawerCount = (MC_STATE.drawers || []).filter(function(d) {
+      return d.zone === 1 && cassettes.some(function(c) {
+        return c.drawerId === d.id && c.drugId && neededDrugIds.indexOf(c.drugId) !== -1 && c.status === 'IN';
+      });
+    }).length;
+    statDrawers.textContent = neededDrawerCount || '—';
+  }
+
+  // ── Drug list sidebar ──
+  _renderPpdDrugList(orders, drugMap);
+
+  // ── STEP 1: Drawer row ──
+  _renderPpdDrawerGrid(drawers1, cassettes, neededDrugIds);
+
+  // ── STEP 2: Cassette grid (disabled initially) ──
+  _renderPpdCassetteArea(cassettes, neededDrugIds);
+}
+
+function _renderPpdDrugList(orders, drugMap) {
+  var listEl  = document.getElementById('ppdDrugList');
+  var countEl = document.getElementById('ppdDrugCountLabel');
+  if (!listEl) return;
+
+  var type = _PPW_DETAIL.type;
+
+  if (type === 'drug') {
+    // Medication/PRN mode — show patient list for this drug
+    var patientMap = {};
+    (MC_STATE.patients || []).forEach(function(p) { patientMap[p.id] = p; });
+    if (countEl) countEl.textContent = 'ผู้ป่วยที่ต้องการยานี้ (' + orders.length + ')';
+
+    var html = '';
+    orders.forEach(function(o) {
+      var p = patientMap[o.patientId] || { name: o.patientId, ward: '—', bed: '—' };
+      var initial = p.name ? p.name.replace(/^[^฀-๿]*/, '').charAt(0) || p.name.charAt(0) : '?';
+      html += '<div class="ppd-drug-item" style="background:rgba(255,255,255,0.72);border:1px solid rgba(0,0,0,0.06);border-left:3px solid #2563eb;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:6px;">'
+        + '<div style="width:30px;height:30px;background:linear-gradient(135deg,#dbeafe,#eff6ff);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:800;color:#2563eb;">' + initial + '</div>'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-size:12.5px;font-weight:700;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + p.name + '</div>'
+        +   '<div style="font-size:10px;color:var(--text-3);margin-top:1px;">' + (p.ward || '—') + ' · เตียง ' + (p.bed || '—') + '</div>'
+        + '</div>'
+        + '<span style="padding:3px 8px;border-radius:6px;font-size:9px;font-weight:700;background:#dbeafe;color:#2563eb;">' + (o.qty || 1) + ' หน่วย</span>'
+        + '</div>';
+    });
+    listEl.innerHTML = html || '<div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">ไม่มีผู้ป่วย</div>';
+
+  } else {
+    // Patient mode — show drug list for this patient
+    if (countEl) countEl.textContent = 'รายการยา (' + orders.length + ')';
+
+    var drugColors = ['#3B82F6','#0D9488','#8B5CF6','#EF4444','#F59E0B','#EC4899','#6366F1'];
+    var drugBg     = ['linear-gradient(135deg,#EFF6FF,#DBEAFE)',
+                      'linear-gradient(135deg,#F0FDFA,#CCFBF1)',
+                      'linear-gradient(135deg,#F5F3FF,#EDE9FE)',
+                      'linear-gradient(135deg,#FEF2F2,#FEE2E2)',
+                      'linear-gradient(135deg,#FFFBEB,#FEF3C7)',
+                      'linear-gradient(135deg,#FDF2F8,#FCE7F3)',
+                      'linear-gradient(135deg,#EEF2FF,#E0E7FF)'];
+
+    var html = '';
+    orders.forEach(function(o, i) {
+      var drug  = drugMap[o.drugId] || { name: o.drugId, dose: '', type: 'oral' };
+      var color = drug.type === 'iv' ? '#0D9488' : drugColors[i % drugColors.length];
+      var bg    = drug.type === 'iv' ? 'linear-gradient(135deg,#F0FDFA,#CCFBF1)' : drugBg[i % drugBg.length];
+      var rounds = (o.rounds || []).join(', ') || '—';
+      var route  = drug.type === 'iv' ? 'IV' : 'PO';
+
+      html += '<div class="ppd-drug-item" style="background:rgba(255,255,255,0.72);border:1px solid rgba(0,0,0,0.06);border-left:3px solid ' + color + ';border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:6px;">'
+        + '<div style="width:30px;height:30px;background:' + bg + ';border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+        + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="4"/><line x1="6" y1="12" x2="18" y2="12"/></svg>'
+        + '</div>'
+        + '<div style="flex:1;min-width:0;">'
+        +   '<div style="font-size:12.5px;font-weight:700;color:var(--text-1);">' + drug.name + ' ' + drug.dose + '</div>'
+        +   '<div style="font-size:10px;color:var(--text-3);margin-top:1px;">' + (o.qty || 1) + ' หน่วย · ' + route + ' · ' + rounds + '</div>'
+        + '</div>'
+        + '<span style="padding:3px 8px;border-radius:6px;font-size:9px;font-weight:700;background:' + bg + ';color:' + color + ';">รอจัด</span>'
+        + '</div>';
+    });
+    listEl.innerHTML = html || '<div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">ไม่มีรายการยา</div>';
+  }
+
+  listEl.querySelectorAll('.ppd-drug-item').forEach(function(el, i) {
+    el.style.animationDelay = (i * 0.07) + 's';
+  });
+}
+
+function _drawerMaxSlots(drawer) {
+  var cart = getCart(MC_STATE.currentCartId);
+  var tmpl = cart ? getCartTemplate(cart.templateId) : null;
+  var drawerNum = parseInt(drawer.id.replace('D', ''), 10);
+  var cfg = tmpl ? tmpl.drawers.find(function(td) { return td.drawerNumber === drawerNum; }) : null;
+  return cfg ? (cfg.rows || 1) * (cfg.cols || cfg.cassetteSlots || 4) : 4;
+}
+
+function _drawerCols(drawer) {
+  var cart = getCart(MC_STATE.currentCartId);
+  var tmpl = cart ? getCartTemplate(cart.templateId) : null;
+  var drawerNum = parseInt(drawer.id.replace('D', ''), 10);
+  var cfg = tmpl ? tmpl.drawers.find(function(td) { return td.drawerNumber === drawerNum; }) : null;
+  return cfg ? (cfg.cols || 4) : 4;
+}
+
+function _renderPpdDrawerGrid(drawers1, cassettes, neededDrugIds) {
+  var gridEl = document.getElementById('ppdDrawerGrid');
+  if (!gridEl) return;
+
+  var svgDrawer = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="10" y1="10" x2="10" y2="20"/></svg>';
+
+  var html = '';
+  drawers1.forEach(function(drawer) {
+    var drawerNum  = drawer.id.replace('D', '');
+    var isSelected = _PPD_SELECTED_DRAWER === drawer.id;
+
+    var hasDone = false;
+    _PPD_DONE_CASSETTES.forEach(function(key) {
+      if (key.indexOf(drawer.id + ':') === 0) hasDone = true;
+    });
+    var doneClass = (hasDone && !isSelected)
+      ? ' done-' + (selectedPrepType || 'patient')
+      : '';
+    var cls = 'ppd-drawer-slot' + (isSelected ? ' selected' : '') + doneClass;
+
+    html += '<div class="' + cls + '" onclick="selectPpdDrawer(\'' + drawer.id + '\')">'
+      + '<div class="ppd-drawer-slot-icon">' + svgDrawer + '</div>'
+      + '<div class="ppd-drawer-num">' + drawerNum + '</div>'
+      + '<div class="ppd-drawer-label">ชั้น ' + drawerNum + '</div>'
+      + '</div>';
+  });
+
+  gridEl.innerHTML = html;
+
+  // Stagger drawer slot entrance
+  gridEl.querySelectorAll('.ppd-drawer-slot').forEach(function(el, i) {
+    el.style.animationDelay = (i * 0.06) + 's';
+  });
+}
+
+function selectPpdDrawer(drawerId) {
+  _PPD_SELECTED_DRAWER   = drawerId;
+  _PPD_SELECTED_CASSETTE = null;
+
+  var neededDrugIds = _getPpdNeededDrugIds();
+  var cassettes = MC_STATE.cassettes || [];
+  var drawers1  = (MC_STATE.drawers  || []).filter(function(d) { return d.zone === 1; });
+  var drawer    = drawers1.find(function(d) { return d.id === drawerId; });
+
+  // Update drawer status badge
+  var statusEl = document.getElementById('ppdHwStatus');
+  if (statusEl && drawer) {
+    statusEl.textContent = 'ลิ้นชัก ' + drawerId.replace('D','') + ' เลือกแล้ว';
+  }
+
+  // Show cassette area, hide lock notice
+  var cassLock = document.getElementById('ppdCassLock');
+  var cassGrid = document.getElementById('ppdCassetteArea');
+  if (cassLock) cassLock.style.display = 'none';
+  if (cassGrid) cassGrid.style.display = 'grid';
+
+  // Update cassette panel status info
+  var cassInfo = document.getElementById('ppdCassStatusInfo');
+  if (cassInfo && drawer) {
+    cassInfo.textContent = 'ลิ้นชัก ' + drawerId.replace('D','') + ' · เลือก Cassette';
+    cassInfo.style.background = 'var(--amber-lt)';
+    cassInfo.style.color = 'var(--amber)';
+  }
+
+  // Advance step tracker: step1 done → step2 active
+  var step1 = document.getElementById('ppdStep1');
+  var step2 = document.getElementById('ppdStep2');
+  var fill  = document.getElementById('ppdStepFill');
+  if (step1) { step1.classList.remove('active'); step1.classList.add('done'); }
+  if (step2) { step2.classList.add('active'); }
+  if (fill)  { fill.classList.add('done'); }
+
+  // Hide summary + disable start btn when drawer changes
+  var sumEl = document.getElementById('ppdSelSummary');
+  if (sumEl) sumEl.style.display = 'none';
+  var btn = document.getElementById('ppdStartBtn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed'; btn.classList.remove('ppd-btn-pop'); }
+
+  _renderPpdDrawerGrid(drawers1, cassettes, neededDrugIds);
+  _renderPpdCassetteArea(cassettes, neededDrugIds);
+}
+
+function _getPpdNeededDrugIds() {
+  var orderIds = _PPW_DETAIL.orderIds || [];
+  var orders = (MC_STATE.orders || []).filter(function(o) {
+    return orderIds.indexOf(o.id) !== -1;
+  });
+  var ids = [];
+  orders.forEach(function(o) {
+    if (ids.indexOf(o.drugId) === -1) ids.push(o.drugId);
+  });
+  return ids;
+}
+
+function _renderPpdCassetteArea(cassettes, neededDrugIds) {
+  var areaEl = document.getElementById('ppdCassetteArea');
+  if (!areaEl) return;
+
+  if (!_PPD_SELECTED_DRAWER) {
+    areaEl.innerHTML = '';
+    return;
+  }
+
+  var drawer   = (MC_STATE.drawers || []).find(function(d) { return d.id === _PPD_SELECTED_DRAWER; });
+  if (!drawer) return;
+
+  var drawerCass = cassettes.filter(function(c) { return c.drawerId === _PPD_SELECTED_DRAWER; });
+  var maxSlots   = _drawerMaxSlots(drawer);
+  var svgCheck   = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  var svgDone = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  var html = '';
+  for (var i = 1; i <= maxSlots; i++) {
+    var slotNum    = i;
+    var isSelected = _PPD_SELECTED_CASSETTE === i;
+    var isDone     = _PPD_DONE_CASSETTES.has(_PPD_SELECTED_DRAWER + ':' + i);
+
+    var cls = 'ppd-cass-slot'
+      + (isDone     ? ' done'     : '')
+      + (isSelected && !isDone ? ' selected' : '');
+
+    var inner = isDone
+      ? '<div class="ppd-cass-done-icon">' + svgDone + '</div>'
+        + '<div class="ppd-cass-num">' + i + '</div>'
+        + '<div class="ppd-cass-done-label">จัดยาแล้ว</div>'
+      : '<div class="ppd-cass-check">' + svgCheck + '</div>'
+        + '<div class="ppd-cass-num">' + i + '</div>';
+
+    var clickAttr = isDone ? '' : ' onclick="selectPpdCassette(this,' + i + ')"';
+    html += '<div class="' + cls + '"' + clickAttr + '>' + inner + '</div>';
+  }
+
+  areaEl.innerHTML = html;
+
+  // Stagger cassette slot entrance
+  areaEl.querySelectorAll('.ppd-cass-slot').forEach(function(el, i) {
+    el.style.animationDelay = (i * 0.05) + 's';
+  });
+}
+
+function selectPpdCassette(el, num) {
+  _PPD_SELECTED_CASSETTE = num;
+
+  // Toggle selected class on all slots
+  var grid = document.getElementById('ppdCassetteArea');
+  if (grid) {
+    grid.querySelectorAll('.ppd-cass-slot').forEach(function(s) { s.classList.remove('selected'); });
+  }
+  if (el) el.classList.add('selected');
+
+  var drawerNum = _PPD_SELECTED_DRAWER ? _PPD_SELECTED_DRAWER.replace('D','') : '?';
+
+  // Update drawer status badge
+  var statusEl = document.getElementById('ppdHwStatus');
+  if (statusEl) statusEl.textContent = 'ลิ้นชัก ' + drawerNum + ' · Cassette ' + num;
+
+  // Update cassette panel status info → done
+  var cassInfo = document.getElementById('ppdCassStatusInfo');
+  if (cassInfo) {
+    cassInfo.textContent = 'ลิ้นชัก ' + drawerNum + ' · Cassette ' + num;
+    cassInfo.style.background = 'var(--accent-lt)';
+    cassInfo.style.color = 'var(--accent-dk)';
+  }
+
+  // Update confirm summary
+  var confirmSummary = document.getElementById('ppdConfirmSummary');
+  if (confirmSummary) confirmSummary.textContent = 'เลือกแล้ว: ลิ้นชัก ' + drawerNum + ' · Cassette ' + num;
+
+  // Advance step tracker: step2 done
+  var step2 = document.getElementById('ppdStep2');
+  if (step2) { step2.classList.remove('active'); step2.classList.add('done'); }
+
+  // Show summary card (re-trigger animation)
+  var sumEl  = document.getElementById('ppdSelSummary');
+  var selTxt = document.getElementById('ppdSelText');
+  if (sumEl) {
+    sumEl.style.display = 'none';
+    void sumEl.offsetWidth;
+    sumEl.style.display = 'flex';
+  }
+  if (selTxt) selTxt.textContent = 'ลิ้นชัก ' + drawerNum + ' · Cassette ' + num;
+
+  // Enable start button with pop animation
+  var btn = document.getElementById('ppdStartBtn');
+  if (btn) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor  = 'pointer';
+    btn.classList.remove('ppd-btn-pop');
+    void btn.offsetWidth;
+    btn.classList.add('ppd-btn-pop');
+  }
+}
+
+function confirmPrepDrawer() {
+  location.hash = '#pg-scan-drug';
+}
+
+/* ── pg-scan-drug ─────────────────────────────────────────── */
+var _scanQueue   = [];  // [{ drawerId, slot, drug }]
+var _scanIndex   = 0;
+var _scanDoneSet = new Set(); // 'D1:3' keys scanned this session
+
+function initScanDrug() {
+  if (location.hash.replace('#','') !== 'pg-scan-drug') return;
+
+  var drugMap = {};
+  DRUG_LIST.forEach(function(d) { drugMap[d.id] = d; });
+
+  // Build queue: all cassettes containing needed drugs
+  var orderIds = _PPW_DETAIL.orderIds || [];
+  var orders   = (MC_STATE.orders || []).filter(function(o) { return orderIds.indexOf(o.id) !== -1; });
+  var neededDrugIds = [];
+  orders.forEach(function(o) {
+    if (neededDrugIds.indexOf(o.drugId) === -1) neededDrugIds.push(o.drugId);
+  });
+
+  var cassettes = MC_STATE.cassettes || [];
+  _scanQueue = [];
+  _scanDoneSet = new Set(); // reset each time page loads
+
+  // Selected cassette from drawer map goes first — only if it contains a needed drug
+  var selectedDrugId = null;
+  if (_PPD_SELECTED_DRAWER && _PPD_SELECTED_CASSETTE) {
+    var selCass = cassettes.find(function(c) {
+      return c.drawerId === _PPD_SELECTED_DRAWER && c.slotNumber === _PPD_SELECTED_CASSETTE;
+    });
+    if (selCass && selCass.drugId && neededDrugIds.indexOf(selCass.drugId) !== -1) {
+      selectedDrugId = selCass.drugId;
+      _scanQueue.push({
+        drawerId: selCass.drawerId,
+        slot: selCass.slotNumber,
+        drug: drugMap[selCass.drugId] || { name: selCass.drugId, dose: '', type: 'oral' },
+        noCassette: false
+      });
+    }
+  }
+
+  // Remaining drugs: prefer same drawer as selected, then any drawer
+  var preferDrawer = _PPD_SELECTED_DRAWER || null;
+  neededDrugIds.forEach(function(drugId) {
+    if (drugId === selectedDrugId) return;
+    // Try same drawer first
+    var cass = preferDrawer ? cassettes.find(function(c) {
+      return c.status === 'IN' && c.drugId === drugId && c.drawerId === preferDrawer;
+    }) : null;
+    // Fallback: any available cassette
+    if (!cass) {
+      cass = cassettes.find(function(c) {
+        return c.status === 'IN' && c.drugId === drugId;
+      });
+    }
+    _scanQueue.push({
+      drawerId: cass ? cass.drawerId : null,
+      slot:     cass ? cass.slotNumber : null,
+      drug:     drugMap[drugId] || { name: drugId, dose: '', type: 'oral' },
+      noCassette: !cass
+    });
+  });
+
+  // Start from first unscanned item
+  _scanIndex = 0;
+  while (_scanIndex < _scanQueue.length && _scanDoneSet.has(_scanQueue[_scanIndex].drawerId + ':' + _scanQueue[_scanIndex].slot)) {
+    _scanIndex++;
+  }
+
+  _renderScanCurrent();
+  _renderScanQueue();
+}
+
+function _renderScanCurrent() {
+  var item = _scanQueue[_scanIndex];
+  var svgPill = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>';
+  var svgIV   = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l1 5H7z"/><path d="M7 8a5 5 0 0 0 10 0"/><line x1="12" y1="13" x2="12" y2="18"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="12" y1="18" x2="12" y2="21"/></svg>';
+
+  var nameEl  = document.getElementById('scanDrugName');
+  var doseEl  = document.getElementById('scanDrugDose');
+  var iconEl  = document.getElementById('scanDrugIcon');
+  var locD    = document.getElementById('scanLocDrawer');
+  var locC    = document.getElementById('scanLocCassette');
+  var badge   = document.getElementById('scanProgressBadge');
+  var navSub  = document.getElementById('scanNavSub');
+  var area    = document.getElementById('scanArea');
+  var line    = document.getElementById('scanLine');
+  var barIcon = document.getElementById('scanBarcodeIcon');
+  var okIcon  = document.getElementById('scanSuccessIcon');
+  var hint    = document.getElementById('scanHint');
+  var btn     = document.getElementById('scanConfirmBtn');
+  var status  = document.getElementById('scanStatus');
+
+  var doneCount = _scanDoneSet.size;
+  var total     = _scanQueue.length;
+
+  if (badge)  badge.textContent  = (doneCount) + ' / ' + total;
+  if (navSub) navSub.textContent = 'แสกนยาเข้า Cassette (' + doneCount + '/' + total + ')';
+  if (status) status.textContent = 'แสกนแล้ว ' + doneCount + ' / ' + total + ' รายการ';
+
+  // Toggle success card / scan area visibility
+  var successCard = document.getElementById('scanSuccessCard');
+  var confirmBar  = document.getElementById('scanConfirmBar');
+
+  if (!item) {
+    // all done — show success card, hide scan area + confirm bar
+    if (nameEl)  nameEl.textContent  = 'ครบทุกรายการแล้ว';
+    if (doseEl)  doseEl.textContent  = '';
+    if (iconEl)  { iconEl.className = 'scan-drug-icon'; iconEl.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>'; }
+    if (locD)    locD.textContent    = '—';
+    if (locC)    locC.textContent    = '—';
+    if (area)        area.hidden = true;
+    if (successCard) successCard.hidden = false;
+    if (confirmBar)  confirmBar.style.display = 'none';
+
+    // Build success summary text — mode-aware
+    var lastItem = _scanQueue[_scanQueue.length - 1] || null;
+    var subEl    = document.getElementById('scanSuccessSub');
+    if (subEl) {
+      var orderIds  = (_PPW_DETAIL && _PPW_DETAIL.orderIds) || [];
+      var allOrders = (MC_STATE.orders || []).filter(function(o) { return orderIds.indexOf(o.id) !== -1; });
+      var totalQty  = allOrders.reduce(function(s, o) { return s + (o.qty || 1); }, 0);
+      var unit      = (lastItem && lastItem.drug && lastItem.drug.type === 'iv') ? 'ถุง' : 'เม็ด';
+
+      if (_PPW_DETAIL && _PPW_DETAIL.type === 'patient') {
+        // Patient mode: show patient name + total drug items scanned
+        var pMap = {};
+        (MC_STATE.patients || []).forEach(function(p) { pMap[p.id] = p; });
+        var pt = pMap[_PPW_DETAIL.id];
+        var ptName = pt ? pt.name : _PPW_DETAIL.id;
+        subEl.textContent = ptName + ' · จัดยาครบ ' + allOrders.length + ' รายการ · รวม ' + totalQty + ' ' + unit;
+      } else if (_PPW_DETAIL && _PPW_DETAIL.type === 'drug') {
+        // Drug mode: show drug name + patient count
+        var drugName = lastItem && lastItem.drug ? lastItem.drug.name : '';
+        var doseTxt  = lastItem && lastItem.drug && lastItem.drug.dose ? ' ' + lastItem.drug.dose : '';
+        var ptCount  = (new Set(allOrders.map(function(o) { return o.patientId; }))).size;
+        subEl.textContent = drugName + doseTxt + ' · จ่ายให้ ' + ptCount + ' คน · รวม ' + totalQty + ' ' + unit;
+      } else {
+        subEl.textContent = 'แสกนครบทุกรายการแล้ว';
+      }
+    }
+
+    // Keep patient panel visible — user can still see distribution after scanning
+    _renderScanPatients(lastItem);
+    return;
+  }
+
+  // not done yet — show scan area, hide success card
+  if (area)        area.hidden = false;
+  if (successCard) successCard.hidden = true;
+  if (confirmBar)  confirmBar.style.display = '';
+
+  if (nameEl)  nameEl.textContent  = item.drug.name;
+  if (doseEl)  doseEl.textContent  = item.drug.dose;
+  if (iconEl)  {
+    iconEl.className = 'scan-drug-icon' + (item.drug.type === 'iv' ? ' iv' : '');
+    iconEl.innerHTML = item.drug.type === 'iv' ? svgIV : svgPill;
+  }
+  if (locD)    locD.textContent    = item.noCassette ? '—' : 'ลิ้นชัก ' + item.drawerId.replace('D','');
+  if (locC)    locC.textContent    = item.noCassette ? 'ไม่มีในรถ' : 'Cassette ' + item.slot;
+
+  _renderScanPatients(item);
+
+  if (item.noCassette) {
+    // no cassette — mark area as warning state, auto-skip
+    if (area)    { area.classList.remove('scanned'); area.style.borderColor = '#f59e0b'; area.style.background = '#fffbeb'; area.style.pointerEvents = 'none'; }
+    if (line)    line.hidden = true;
+    if (barIcon) barIcon.hidden = true;
+    if (okIcon)  okIcon.hidden  = true;
+    if (hint)    hint.textContent = 'ยานี้ไม่มีใน Cassette ของรถ';
+    if (btn)     { btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed'; }
+    // auto-advance after 1.2s
+    setTimeout(function() {
+      _scanIndex++;
+      _renderScanCurrent();
+      _renderScanQueue();
+    }, 1200);
+  } else {
+    if (area)    { area.classList.remove('scanned'); area.style.borderColor = ''; area.style.background = ''; area.style.pointerEvents = ''; }
+    if (line)    line.hidden = false;
+    if (barIcon) barIcon.hidden = false;
+    if (okIcon)  okIcon.hidden  = true;
+    if (hint)    hint.textContent = 'แตะเพื่อแสกนบาร์โค้ดยา';
+    if (btn)     { btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed'; }
+  }
+}
+
+function _renderScanQueue() {
+  var queueEl = document.getElementById('scanQueue');
+  if (!queueEl) return;
+
+  var svgCheck = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  var svgPill  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>';
+
+  var svgWarn = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  var html = '';
+  _scanQueue.forEach(function(item, i) {
+    if (i === _scanIndex) return; // skip current
+    var key   = item.noCassette ? null : (item.drawerId + ':' + item.slot);
+    var done  = key && _scanDoneSet.has(key);
+    var icon  = item.noCassette ? svgWarn : (done ? svgCheck : svgPill);
+    var loc   = item.noCassette ? 'ไม่มีใน Cassette' : ('ลิ้นชัก ' + item.drawerId.replace('D','') + ' · Cassette ' + item.slot);
+    var statusTxt = item.noCassette ? 'ไม่มีในรถ' : (done ? 'แสกนแล้ว' : 'รอ');
+    var extraStyle = item.noCassette ? ' style="border-color:#f59e0b;background:#fffbeb;opacity:1;"' : '';
+    html += '<div class="scan-queue-item' + (done ? ' done' : '') + '"' + extraStyle + '>'
+      + '<div class="scan-queue-icon">' + icon + '</div>'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div class="scan-queue-name">' + item.drug.name + (item.drug.dose ? ' ' + item.drug.dose : '') + '</div>'
+      +   '<div class="scan-queue-loc">' + loc + '</div>'
+      + '</div>'
+      + '<div class="scan-queue-status" style="' + (item.noCassette ? 'background:#fef3c7;color:#b45309;' : '') + '">' + statusTxt + '</div>'
+      + '</div>';
+  });
+  queueEl.innerHTML = html;
+}
+
+function _renderScanPatients(item) {
+  var panelEl = document.getElementById('scanPatientPanel');
+  if (!panelEl) return;
+
+  var type = _PPW_DETAIL.type;
+  if (type !== 'drug' && type !== 'patient') { panelEl.style.display = 'none'; return; }
+
+  var orderIds   = _PPW_DETAIL.orderIds || [];
+  var allOrders  = (MC_STATE.orders || []).filter(function(o) { return orderIds.indexOf(o.id) !== -1; });
+  if (!allOrders.length) { panelEl.style.display = 'none'; return; }
+
+  var patientMap = {};
+  (MC_STATE.patients || []).forEach(function(p) { patientMap[p.id] = p; });
+  var drugMap = {};
+  DRUG_LIST.forEach(function(d) { drugMap[d.id] = d; });
+
+  var svgPerson = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  var svgPill   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>';
+
+  if (type === 'drug') {
+    // ─── Drug mode: show patients receiving this drug ───
+    var isIV = item && item.drug && item.drug.type === 'iv';
+    var unit = isIV ? 'ถุง' : 'เม็ด';
+    var cassettes = MC_STATE.cassettes || [];
+    var cass = (item && item.drawerId) ? cassettes.find(function(c) {
+      return c.drawerId === item.drawerId && c.slotNumber === item.slot;
+    }) : null;
+    var stockQty      = cass ? cass.quantity : 0;
+    var totalDispense = allOrders.reduce(function(s, o) { return s + (o.qty || 1); }, 0);
+
+    var rowsHtml = allOrders.map(function(o) {
+      var p    = patientMap[o.patientId] || { name: o.patientId, bed: '—' };
+      var init = p.name ? p.name.split(' ').slice(0,2).map(function(w) { return w.charAt(0); }).join('') : '?';
+      return '<div class="scan-patient-row">'
+        + '<div class="scan-patient-avatar">' + init + '</div>'
+        + '<div class="scan-patient-info">'
+        +   '<div class="scan-patient-name">' + (p.name || o.patientId) + '</div>'
+        +   '<div class="scan-patient-bed">เตียง ' + (p.bed || '—') + '</div>'
+        + '</div>'
+        + '<div class="scan-patient-qty">×' + (o.qty || 1) + ' ' + unit + '</div>'
+        + '</div>';
+    }).join('');
+
+    panelEl.innerHTML =
+      '<div class="scan-patient-header">'
+      + '<div class="scan-patient-title">' + svgPerson + ' ผู้ป่วยที่รับยา'
+      + ' <span class="scan-patient-count">' + allOrders.length + ' คน</span>'
+      + '</div>'
+      + '<div class="scan-patient-stock">คงเหลือ ' + stockQty + ' ' + unit + ' · จ่าย ' + totalDispense + ' ' + unit + '</div>'
+      + '</div>'
+      + '<div class="scan-patient-list">' + rowsHtml + '</div>';
+    panelEl.style.display = '';
+    return;
+  }
+
+  // ─── Patient mode: show patient info + drug list ───
+  var patient = patientMap[_PPW_DETAIL.id] || { name: _PPW_DETAIL.id, bed: '—', ward: '—' };
+  var init    = patient.name ? patient.name.split(' ').slice(0,2).map(function(w) { return w.charAt(0); }).join('') : '?';
+
+  // Build drug rows — show scan progress per drug
+  var drugRowsHtml = allOrders.map(function(o) {
+    var d        = drugMap[o.drugId] || { name: o.drugId, dose: '', type: 'oral' };
+    var isIV     = d.type === 'iv';
+    var unit     = isIV ? 'ถุง' : 'เม็ด';
+    // Find queue item for this drug to check scan status
+    var qItem    = (_scanQueue || []).find(function(q) { return q.drug && (q.drug.id === o.drugId || q.drug.name === d.name); });
+    var scanned  = qItem && qItem.drawerId && _scanDoneSet.has(qItem.drawerId + ':' + qItem.slot);
+    var statusCls = scanned ? ' done' : '';
+    var statusIco = scanned
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+      : '<span class="scan-drug-row-dot"></span>';
+    return '<div class="scan-drug-row' + statusCls + '">'
+      + '<div class="scan-drug-row-icon">' + statusIco + '</div>'
+      + '<div class="scan-drug-row-info">'
+      +   '<div class="scan-drug-row-name">' + d.name + (d.dose ? ' ' + d.dose : '') + '</div>'
+      +   '<div class="scan-drug-row-loc">' + (qItem && qItem.drawerId ? 'ลิ้นชัก ' + qItem.drawerId.replace('D','') + ' · Cassette ' + qItem.slot : 'ไม่มีในรถ') + '</div>'
+      + '</div>'
+      + '<div class="scan-drug-row-qty">×' + (o.qty || 1) + ' ' + unit + '</div>'
+      + '</div>';
+  }).join('');
+
+  var doneCount = (_scanQueue || []).filter(function(q) {
+    return q.drawerId && _scanDoneSet.has(q.drawerId + ':' + q.slot);
+  }).length;
+
+  panelEl.innerHTML =
+    '<div class="scan-patient-header">'
+    + '<div class="scan-patient-title">' + svgPerson + ' จัดยาให้ผู้ป่วย'
+    + '</div>'
+    + '<div class="scan-patient-stock">' + doneCount + ' / ' + allOrders.length + ' รายการ</div>'
+    + '</div>'
+    + '<div class="scan-patient-pt-card">'
+    +   '<div class="scan-patient-avatar">' + init + '</div>'
+    +   '<div class="scan-patient-info">'
+    +     '<div class="scan-patient-name">' + (patient.name || _PPW_DETAIL.id) + '</div>'
+    +     '<div class="scan-patient-bed">' + (patient.ward || '') + ' · เตียง ' + (patient.bed || '—') + '</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="scan-drug-list-head">' + svgPill + ' ยาที่ต้องจัด <span class="scan-patient-count">' + allOrders.length + ' รายการ</span></div>'
+    + '<div class="scan-drug-list">' + drugRowsHtml + '</div>';
+  panelEl.style.display = '';
+}
+
+function simulateScan() {
+  var item = _scanQueue[_scanIndex];
+  if (!item) return;
+
+  var key = item.drawerId + ':' + item.slot;
+  if (_scanDoneSet.has(key)) return;
+
+  _scanDoneSet.add(key);
+  _PPD_DONE_CASSETTES.add(key);
+
+  var area    = document.getElementById('scanArea');
+  var line    = document.getElementById('scanLine');
+  var barIcon = document.getElementById('scanBarcodeIcon');
+  var okIcon  = document.getElementById('scanSuccessIcon');
+  var hint    = document.getElementById('scanHint');
+
+  if (area)    area.classList.add('scanned');
+  if (line)    line.hidden = true;
+  if (barIcon) barIcon.hidden = true;
+  if (okIcon)  okIcon.hidden  = false;
+  if (hint)    hint.textContent = 'แสกนสำเร็จ ✓';
+
+  // Move to next after short delay
+  setTimeout(function() {
+    _scanIndex++;
+    while (_scanIndex < _scanQueue.length && _scanDoneSet.has(_scanQueue[_scanIndex].drawerId + ':' + _scanQueue[_scanIndex].slot)) {
+      _scanIndex++;
+    }
+    _renderScanCurrent();
+    _renderScanQueue();
+  }, 700);
+}
+
+function confirmScan() {
+  var type = _PPW_DETAIL.type;
+  var id   = _PPW_DETAIL.id;
+  if (type && id) _PPW_DONE_SET.add(type + ':' + id);
+  _scanDoneSet = new Set();
+  location.hash = '#pg-prep-work';
+}
+
+// Success card actions
+function finishScanContinue() {
+  var type = _PPW_DETAIL.type;
+  var id   = _PPW_DETAIL.id;
+  if (type && id) _PPW_DONE_SET.add(type + ':' + id);
+  _scanDoneSet = new Set();
+  location.hash = '#pg-prep-work';
+}
+
+function finishScanGoDashboard() {
+  var type = _PPW_DETAIL.type;
+  var id   = _PPW_DETAIL.id;
+  if (type && id) _PPW_DONE_SET.add(type + ':' + id);
+  _scanDoneSet = new Set();
+  location.hash = '#pg-dashboard';
+}
+
+
+
+/* ════════════════════════════════════════════════════════
+   DISPENSE FLOW — Page 3: Patient Verification (5 Rights)
+   ════════════════════════════════════════════════════════ */
+
+var _DV_VERIFIED_PATIENT = null;        // patient ID once verified
+var _DV_EXPECTED_PATIENT = null;        // pre-selected from queue (page 2)
+var _DV_ROUND            = 'morning';   // current round (default morning)
+
+const _DV_ROUND_LABEL = { morning:'รอบเช้า · 08:00', noon:'รอบกลางวัน · 12:00',
+                          evening:'รอบเย็น · 16:00', bedtime:'รอบก่อนนอน · 20:00' };
+const _DV_ROUND_TH    = { morning:'เช้า', noon:'กลางวัน', evening:'เย็น', bedtime:'ก่อนนอน' };
+
+function initDispenseVerify() {
+  if (location.hash.replace('#','') !== 'pg-dispense-verify') return;
+  seedMcData();
+
+  // Auto-detect round based on time of day
+  var hr = new Date().getHours();
+  if      (hr < 10)  _DV_ROUND = 'morning';
+  else if (hr < 14)  _DV_ROUND = 'noon';
+  else if (hr < 18)  _DV_ROUND = 'evening';
+  else               _DV_ROUND = 'bedtime';
+
+  _renderDvRoundStrip();
+  _showDvScanState();
+
+  // Auto-focus barcode input (simulates scanner ready)
+  setTimeout(function() {
+    var input = document.getElementById('dvScanInput');
+    if (input) input.focus();
+  }, 200);
+
+  // Listen for "barcode" keyboard input — typed quickly + ENTER
+  var input = document.getElementById('dvScanInput');
+  if (input) {
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && input.value.trim()) {
+        simulateWristbandScan(input.value.trim());
+        input.value = '';
+      }
+    });
+  }
+}
+
+function _renderDvRoundStrip() {
+  var nameEl  = document.getElementById('dvRoundName');
+  var doneEl  = document.getElementById('dvProgressDone');
+  var totalEl = document.getElementById('dvProgressTotal');
+  if (nameEl) nameEl.textContent = _DV_ROUND_LABEL[_DV_ROUND] || 'รอบเช้า · 08:00';
+
+  // Count patients with PENDING orders for this round in current ward
+  var roundTh = _DV_ROUND_TH[_DV_ROUND];
+  var wardPts = _wardOrders().filter(function(o) {
+    return o.rounds && o.rounds.indexOf(roundTh) !== -1;
+  });
+  var totalPatients = (new Set(wardPts.map(function(o) { return o.patientId; }))).size;
+  var donePatients  = (new Set(wardPts.filter(function(o) { return o.status === 'DONE'; })
+                                       .map(function(o) { return o.patientId; }))).size;
+  if (totalEl) totalEl.textContent = totalPatients;
+  if (doneEl)  doneEl.textContent  = donePatients;
+}
+
+function _showDvScanState() {
+  var scanSec   = document.getElementById('dvScanSection');
+  var ptSec     = document.getElementById('dvPatientSection');
+  var actionBar = document.getElementById('dvActionBar');
+  if (scanSec)   scanSec.style.display = '';
+  if (ptSec)     ptSec.hidden = true;
+  if (actionBar) actionBar.hidden = true;
+}
+
+function _showDvVerifiedState() {
+  var scanSec   = document.getElementById('dvScanSection');
+  var ptSec     = document.getElementById('dvPatientSection');
+  var actionBar = document.getElementById('dvActionBar');
+  if (scanSec)   scanSec.style.display = 'none';
+  if (ptSec)     ptSec.hidden = false;
+  if (actionBar) actionBar.hidden = false;
+}
+
+function simulateWristbandScan(barcode) {
+  // Pick a patient — by barcode > expected (from queue) > rotate
+  var roundTh = _DV_ROUND_TH[_DV_ROUND];
+  var wardPts;
+  if (_DV_ROUND === 'stat') {
+    wardPts = _wardOrders().filter(function(o) {
+      return o.status === 'PENDING' && _DA_HIGH_ALERT.indexOf(o.drugId) !== -1;
+    });
+  } else {
+    wardPts = _wardOrders().filter(function(o) {
+      return o.rounds && o.rounds.indexOf(roundTh) !== -1 && o.status === 'PENDING';
+    });
+  }
+  var patientIds = Array.from(new Set(wardPts.map(function(o) { return o.patientId; })));
+
+  var pickedId;
+  if (barcode) {
+    // Try to match HN
+    var match = (MC_STATE.patients || []).find(function(p) {
+      return p.hn === barcode || p.id === barcode || p.id.toLowerCase() === barcode.toLowerCase();
+    });
+    pickedId = match ? match.id : (_DV_EXPECTED_PATIENT || patientIds[0]);
+  } else if (_DV_EXPECTED_PATIENT) {
+    // Pre-selected from queue page → simulate the matching wristband
+    pickedId = _DV_EXPECTED_PATIENT;
+    _DV_EXPECTED_PATIENT = null; // consume it
+  } else {
+    // Cycle through patients on each tap
+    if (!_DV_VERIFIED_PATIENT) {
+      pickedId = patientIds[0] || (MC_STATE.patients[0] && MC_STATE.patients[0].id);
+    } else {
+      var idx = patientIds.indexOf(_DV_VERIFIED_PATIENT);
+      pickedId = patientIds[(idx + 1) % patientIds.length] || patientIds[0];
+    }
+  }
+  if (!pickedId) {
+    alert('ไม่พบผู้ป่วยใน round นี้');
+    return;
+  }
+  _DV_VERIFIED_PATIENT = pickedId;
+
+  // Visual scan animation
+  var area = document.getElementById('dvScanArea');
+  if (area) {
+    area.classList.add('scanned');
+    setTimeout(function() {
+      _renderDvPatient(pickedId);
+      _showDvVerifiedState();
+    }, 500);
+  } else {
+    _renderDvPatient(pickedId);
+    _showDvVerifiedState();
+  }
+}
+
+function manualEntryPatient() {
+  var hn = prompt('กรอก HN ผู้ป่วย:');
+  if (!hn) return;
+  simulateWristbandScan(hn.trim());
+}
+
+function resetWristbandScan() {
+  _DV_VERIFIED_PATIENT = null;
+  var area = document.getElementById('dvScanArea');
+  if (area) area.classList.remove('scanned');
+  _showDvScanState();
+  setTimeout(function() {
+    var input = document.getElementById('dvScanInput');
+    if (input) input.focus();
+  }, 100);
+}
+
+function _renderDvPatient(patientId) {
+  var p = (MC_STATE.patients || []).find(function(x) { return x.id === patientId; });
+  if (!p) return;
+
+  // Avatar initials (first chars of first 2 words)
+  var initials = p.name ? p.name.split(' ').slice(0,2).map(function(w) { return w.charAt(0); }).join('') : '?';
+
+  // Set fields
+  var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+  set('dvAvatar', initials);
+  set('dvName',   p.name);
+  set('dvHn',     'HN ' + p.hn);
+  set('dvBed',    'เตียง ' + p.bed);
+  set('dvWard',   p.ward);
+  set('dvDemo',   p.gender + ' · ' + p.age + ' ปี');
+  set('dvCond',   p.condition || '—');
+
+  // Allergy banner
+  var banner   = document.getElementById('dvAllergyBanner');
+  var listEl   = document.getElementById('dvAllergyList');
+  if (banner && listEl) {
+    if (p.allergies && p.allergies.length) {
+      banner.hidden = false;
+      listEl.innerHTML = p.allergies.map(function(a) {
+        return '<span class="dv-allergy-item">' + a + '</span>';
+      }).join('');
+    } else {
+      banner.hidden = true;
+    }
+  }
+
+  // Vital signs (mock — semi-realistic per patient condition)
+  _renderDvVitals(p);
+
+  // Drugs to dispense for this round
+  _renderDvMeds(p);
+}
+
+function _renderDvVitals(p) {
+  // Mock vitals — vary by condition for realism (deterministic seed: patient ID)
+  var seed = parseInt(p.id.replace(/\D/g, ''), 10) || 0;
+  var bpSys, bpDia, hr, temp, spo2, status;
+
+  if (p.condition && p.condition.indexOf('ความดันสูง') !== -1) {
+    bpSys = 145 + (seed % 10); bpDia = 92 + (seed % 6); status = 'warn';
+  } else if (p.condition && p.condition.indexOf('ICU') !== -1 || p.bed.indexOf('ICU') !== -1) {
+    bpSys = 110 - (seed % 8);  bpDia = 70 - (seed % 5);  status = 'warn';
+  } else {
+    bpSys = 120 + (seed % 8);  bpDia = 78 + (seed % 5);  status = 'ok';
+  }
+  hr   = 72 + (seed % 14);
+  temp = (36.7 + (seed % 5) * 0.1).toFixed(1);
+  spo2 = 96 + (seed % 4);
+
+  // Find the cells and set values
+  var bpCell   = document.getElementById('dvVitalBP');
+  var hrCell   = document.getElementById('dvVitalHR');
+  var tempCell = document.getElementById('dvVitalTemp');
+  var spo2Cell = document.getElementById('dvVitalSpO2');
+  if (bpCell)   bpCell.querySelector('.dv-vital-val').innerHTML   = bpSys + '<span class="dv-vital-sep">/</span>' + bpDia;
+  if (hrCell)   hrCell.querySelector('.dv-vital-val').textContent   = hr;
+  if (tempCell) tempCell.querySelector('.dv-vital-val').textContent = temp;
+  if (spo2Cell) spo2Cell.querySelector('.dv-vital-val').textContent = spo2;
+
+  var statusEl = document.getElementById('dvVitalStatus');
+  if (statusEl) {
+    statusEl.className = 'dv-vital-status dv-vital-status-' + status;
+    statusEl.textContent = status === 'ok' ? 'ปกติ' : (status === 'warn' ? 'ต้องติดตาม' : 'ผิดปกติ');
+  }
+  var timeEl = document.getElementById('dvVitalTime');
+  if (timeEl) timeEl.textContent = 'วัดเมื่อ ' + (15 + (seed % 30)) + ' นาทีที่แล้ว';
+}
+
+function _renderDvMeds(p) {
+  var roundTh = _DV_ROUND_TH[_DV_ROUND];
+  var orders  = (MC_STATE.orders || []).filter(function(o) {
+    return o.patientId === p.id && o.rounds && o.rounds.indexOf(roundTh) !== -1 && o.status === 'PENDING';
+  });
+
+  var drugMap = {};
+  DRUG_LIST.forEach(function(d) { drugMap[d.id] = d; });
+
+  // High-alert drug list (canonical for this prototype)
+  var HIGH_ALERT = ['INSREG', 'HEP5K', 'KCL10', 'NAHCO3'];
+
+  var listEl  = document.getElementById('dvMedsList');
+  var countEl = document.getElementById('dvMedsCount');
+  if (countEl) countEl.textContent = orders.length + ' รายการ';
+
+  if (!listEl) return;
+  if (!orders.length) {
+    listEl.innerHTML = '<div style="padding:18px;text-align:center;color:var(--text-3);font-size:13px;">ไม่มียาที่ต้องจ่ายในรอบนี้</div>';
+    return;
+  }
+
+  var svgPill = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>';
+  var svgIV   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l1 5H7z"/><path d="M7 8a5 5 0 0 0 10 0"/><line x1="12" y1="13" x2="12" y2="18"/></svg>';
+
+  listEl.innerHTML = orders.map(function(o) {
+    var d = drugMap[o.drugId] || { name: o.drugId, dose: '', type: 'oral' };
+    var isIV   = d.type === 'iv';
+    var isHigh = HIGH_ALERT.indexOf(o.drugId) !== -1;
+    var iconCls = isHigh ? 'high-alert' : (isIV ? 'iv' : '');
+    var unit    = isIV ? 'ถุง' : 'เม็ด';
+    var route   = isIV ? 'IV' : 'PO';
+    return '<div class="dv-meds-row">'
+      + '<div class="dv-meds-row-icon ' + iconCls + '">' + (isIV ? svgIV : svgPill) + '</div>'
+      + '<div class="dv-meds-row-info">'
+      +   '<div class="dv-meds-row-name">'
+      +     d.name + (d.dose ? ' ' + d.dose : '')
+      +     (isHigh ? ' <span class="dv-high-alert-pill">⚠ HIGH ALERT</span>' : '')
+      +   '</div>'
+      +   '<div class="dv-meds-row-meta">' + route + ' · รอบ' + roundTh + '</div>'
+      + '</div>'
+      + '<div class="dv-meds-row-qty">×' + (o.qty || 1) + ' ' + unit + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function confirmPatientGoAdminister() {
+  if (!_DV_VERIFIED_PATIENT) {
+    alert('กรุณาสแกน Wristband ก่อน');
+    return;
+  }
+  location.hash = '#pg-dispense-administer';
+}
+
+
+/* ════════════════════════════════════════════════════════
+   DISPENSE FLOW — Page 4: Medication Administration
+   ════════════════════════════════════════════════════════ */
+
+var _DA_QUEUE       = [];   // [{ orderId, drugId, drug, qty, route, time, status, reason, isHigh, allergyMatch }]
+var _DA_INDEX       = 0;
+var _DA_SCAN_COUNT  = 0;    // bag scan flag: 0 = not scanned, 1 = scanned
+var _DA_2ND_DONE    = false;// 2nd nurse confirmed
+var _DA_PENDING_ACTION = null; // 'refused' | 'held' awaiting reason
+
+const _DA_HIGH_ALERT = ['INSREG', 'HEP5K', 'KCL10', 'NAHCO3'];
+
+// Map drug name keywords to allergy strings (simple matcher for demo)
+function _daHasAllergy(drug, patient) {
+  if (!patient || !patient.allergies || !patient.allergies.length) return null;
+  if (!drug || !drug.name) return null;
+  var dn = drug.name.toLowerCase();
+  for (var i = 0; i < patient.allergies.length; i++) {
+    var a   = patient.allergies[i];
+    var aLo = a.toLowerCase();
+    // Direct name overlap (e.g., Ibuprofen vs Ibuprofen)
+    if (dn.indexOf(aLo) !== -1) return a;
+    // Class match: Penicillin → Amoxicillin, Ampicillin
+    if (aLo === 'penicillin' && (dn.indexOf('amox') !== -1 || dn.indexOf('ampi') !== -1)) return a;
+    if (aLo === 'sulfa' && dn.indexOf('sulfa') !== -1) return a;
+    if (aLo === 'sulfonamides' && dn.indexOf('sulfa') !== -1) return a;
+    // NSAID class
+    if (aLo === 'aspirin' && (dn.indexOf('ibuprofen') !== -1 || dn.indexOf('asa') !== -1)) return a;
+  }
+  return null;
+}
+
+function initDispenseAdminister() {
+  if (location.hash.replace('#','') !== 'pg-dispense-administer') return;
+  seedMcData();
+
+  if (!_DV_VERIFIED_PATIENT) {
+    location.hash = '#pg-dispense-verify';
+    return;
+  }
+
+  _daBuildQueue();
+  _daRenderHeader();
+  _daRenderList();
+  _DA_INDEX = _daFindNextPending();
+  _DA_SCAN_COUNT = 0;
+  _DA_2ND_DONE   = false;
+  _daRenderDetail();
+  _daUpdateBottomBar();
+}
+
+function _daBuildQueue() {
+  var p = (MC_STATE.patients || []).find(function(x) { return x.id === _DV_VERIFIED_PATIENT; });
+  if (!p) { _DA_QUEUE = []; return; }
+  var roundTh = _DV_ROUND_TH[_DV_ROUND] || 'เช้า';
+  var roundTime = { 'เช้า':'08:00', 'กลางวัน':'12:00', 'เย็น':'16:00', 'ก่อนนอน':'20:00' }[roundTh] || '—';
+
+  var orders = (MC_STATE.orders || []).filter(function(o) {
+    return o.patientId === p.id && o.rounds && o.rounds.indexOf(roundTh) !== -1 && o.status !== 'DONE';
+  });
+
+  var drugMap = {};
+  DRUG_LIST.forEach(function(d) { drugMap[d.id] = d; });
+
+  var cassettes = MC_STATE.cassettes || [];
+  _DA_QUEUE = orders.map(function(o) {
+    var d = drugMap[o.drugId] || { id: o.drugId, name: o.drugId, dose: '', type: 'oral' };
+    var orderQty = o.qty || 1;
+
+    // Pick cassette(s) for this drug.
+    // Strategy: find one IN cassette with enough stock. Only spread across multiple
+    // cassettes if a single cassette doesn't have enough (rare in unit-dose carts).
+    var inCassettes = cassettes
+      .filter(function(c) { return c.status === 'IN' && c.drugId === o.drugId && c.quantity > 0; })
+      .sort(function(a, b) { return b.quantity - a.quantity; });   // most-stocked first
+
+    var pickedLocs = [];
+    if (inCassettes.length) {
+      var firstFit = inCassettes.find(function(c) { return c.quantity >= orderQty; });
+      if (firstFit) {
+        pickedLocs = [firstFit];        // single cassette covers the order
+      } else {
+        // Spread across cassettes only when no single one has enough stock
+        var need = orderQty;
+        for (var i = 0; i < inCassettes.length && need > 0; i++) {
+          pickedLocs.push(inCassettes[i]);
+          need -= inCassettes[i].quantity;
+        }
+      }
+    } else {
+      // No IN cassette — fallback to any so user sees the location with "ไม่มีในรถเข็น"
+      var fallback = cassettes.find(function(c) { return c.drugId === o.drugId; });
+      if (fallback) pickedLocs = [fallback];
+    }
+
+    var locations = pickedLocs.map(function(c) {
+      return { drawerId: c.drawerId, slot: c.slotNumber, cassetteId: c.id, qty: c.quantity };
+    });
+
+    return {
+      orderId:      o.id,
+      drugId:       o.drugId,
+      drug:         d,
+      qty:          orderQty,
+      route:        d.type === 'iv' ? 'IV' : 'PO',
+      time:         roundTime,
+      round:        roundTh,
+      status:       'pending',
+      reason:       null,
+      isHigh:       _DA_HIGH_ALERT.indexOf(o.drugId) !== -1,
+      allergyMatch: _daHasAllergy(d, p),
+      stage:        'locked',
+      locations:    locations,
+      scannedCount: 0,
+      // ── 7 Rights — manual confirmations ──
+      rightRouteConfirmed:  false,
+      rightReasonConfirmed: false
+    };
+  });
+}
+
+/* ── 7 Rights — compute the live state for an item (all sub-text dynamic) ── */
+function _da7Rights(item) {
+  if (!item) return [];
+
+  // ── Live patient info ──
+  var pt = (MC_STATE.patients || []).find(function(p) { return p.id === _DV_VERIFIED_PATIENT; });
+
+  // ── Live time + round window ──
+  var ROUND_TIME = { 'เช้า': 8, 'กลางวัน': 12, 'เย็น': 16, 'ก่อนนอน': 20 };
+  var roundHr = ROUND_TIME[item.round] || 8;
+  var now     = new Date();
+  var nowHr   = now.getHours();
+  var nowMin  = now.getMinutes();
+  var pad2    = function(n) { return String(n).padStart(2, '0'); };
+  var nowStr  = pad2(nowHr) + ':' + pad2(nowMin);
+  var diffMin = (nowHr - roundHr) * 60 + nowMin;
+  var absDiff = Math.abs(diffMin);
+  var inWindow = absDiff <= 120;   // ±2 hours
+
+  // ── Right Drug — barcode match (the scanner only counts when active item matches) ──
+  var drugScanned = item.scannedCount > 0;
+  var drugSub;
+  if (item.allergyMatch) {
+    drugSub = '⚠ ยานี้อยู่ในรายการแพ้ของผู้ป่วย';
+  } else if (drugScanned) {
+    drugSub = 'Barcode ตรงกับ ' + item.drug.name + (item.drug.dose ? ' ' + item.drug.dose : '');
+  } else {
+    drugSub = 'รอสแกน — ต้อง match กับ ' + item.drug.name;
+  }
+
+  // ── Right Dose — 1 ถุง บรรจุ N เม็ด/ขวด ──
+  var pillUnit = item.route === 'IV' ? 'ขวด' : 'เม็ด';
+  var bagLbl   = item.scannedCount >= 1 ? '✓ สแกนแล้ว 1 ถุง' : 'รอสแกน · 1 ถุง';
+  var doseSub  = bagLbl + ' (บรรจุ ' + item.qty + ' ' + pillUnit
+              + (item.drug.dose ? ' × ' + item.drug.dose : '') + ')';
+
+  // ── Right Route — auto-resolved Thai label ──
+  var routeMap = { 'IV': 'ฉีดเข้าเส้น (IV)', 'PO': 'รับประทาน (PO)', 'IM': 'ฉีดเข้ากล้ามเนื้อ (IM)', 'SC': 'ฉีดใต้ผิวหนัง (SC)' };
+  var routeSub = (routeMap[item.route] || item.route)
+               + (item.rightRouteConfirmed ? ' · ยืนยันแล้ว' : ' · รอยืนยัน');
+
+  // ── Right Time — show now + round time + Δ ──
+  var roundStr = pad2(roundHr) + ':00';
+  var timeSub;
+  if (inWindow) {
+    timeSub = 'ขณะนี้ ' + nowStr + ' · รอบ' + item.round + ' (' + roundStr + ') · ภายใน ±2 ชม.';
+  } else {
+    var sign = diffMin > 0 ? 'ช้ากว่า ' : 'เร็วกว่า ';
+    var dh   = Math.floor(absDiff / 60);
+    var dm   = absDiff % 60;
+    timeSub  = '⚠ ' + sign + (dh ? dh + ' ชม. ' : '') + dm + ' นาที จากรอบ' + item.round;
+  }
+
+  // ── Right Patient — live patient name ──
+  var patientSub = pt
+    ? pt.name + ' · HN ' + pt.hn + ' · เตียง ' + pt.bed
+    : 'รอ Wristband ยืนยัน';
+
+  // ── Right Documentation — show timestamp when given ──
+  var docSub;
+  if (item.status === 'given' && item.givenAt) {
+    docSub = '✓ บันทึก MAR เมื่อ ' + item.givenAt + ' โดย ' + (item.givenBy || '—');
+  } else {
+    docSub = 'จะบันทึกอัตโนมัติเมื่อกด "จ่ายแล้ว"';
+  }
+
+  return [
+    { key:'patient', lbl:'Right Patient',                     sub:patientSub, ok:!!pt,                                  auto:true  },
+    { key:'drug',    lbl:'Right Drug',                        sub:drugSub,    ok:drugScanned && !item.allergyMatch,     auto:true  },
+    { key:'dose',    lbl:'Right Dose',                        sub:doseSub,    ok:item.scannedCount >= 1,                auto:true  },
+    { key:'route',   lbl:'Right Route',                       sub:routeSub,   ok:!!item.rightRouteConfirmed,            auto:false },
+    { key:'time',    lbl:'Right Time',                        sub:timeSub,    ok:inWindow,                              auto:true  },
+    { key:'doc',     lbl:'Right Documentation',               sub:docSub,     ok:item.status === 'given',               auto:true  },
+    { key:'reason',  lbl:'Right Reason / Right to Refuse',    sub:_daReasonText(item), ok:_daReasonOk(item),            auto:false }
+  ];
+}
+
+/* ── Right Reason / Right to Refuse helpers ──
+   ครอบคลุม:
+   1) ยาเหมาะสมกับเหตุผลของการเจ็บป่วย (indication appropriateness)
+   2) ไม่มี allergy match — ห้ามจ่ายเด็ดขาด
+   3) ผู้ป่วยรับทราบและไม่ปฏิเสธ (Right to Refuse)
+*/
+function _daReasonText(item) {
+  if (item.allergyMatch) return '⚠ ผู้ป่วยแพ้ ' + item.allergyMatch + ' — ห้ามจ่าย';
+  if (item.rightReasonConfirmed) return '✓ เหมาะสมกับอาการ · ผู้ป่วยรับทราบและยินยอม';
+  return 'ยืนยันว่าตรงกับเหตุผลการรักษา + ผู้ป่วยรับยา';
+}
+function _daReasonOk(item) {
+  if (item.allergyMatch) return false;            // allergy = block forever
+  return !!item.rightReasonConfirmed;
+}
+
+function _daRender7Rights() {
+  var item   = _DA_QUEUE[_DA_INDEX];
+  var listEl = document.getElementById('daRightsList');
+  var metaEl = document.getElementById('daRightsMeta');
+  if (!listEl) return;
+  if (!item) { listEl.innerHTML = ''; return; }
+
+  var rights = _da7Rights(item);
+  var passed = rights.filter(function(r) { return r.ok; }).length;
+  if (metaEl) metaEl.textContent = passed + ' / ' + rights.length + ' ✓';
+
+  // Actor (the nurse/pharmacist doing the check)
+  var u = getCurrentUser ? getCurrentUser() : null;
+  var name = (u && u.name) || MC_STATE.currentUser || 'Nurse';
+  var role = u ? roleLabel(u.role) : 'พยาบาล';
+  var initials = name.split(' ').slice(0, 2).map(function(w) { return w.charAt(0); }).join('') || '?';
+  var avEl   = document.getElementById('daRightsActorAvatar');
+  var nameEl2 = document.getElementById('daRightsActorName');
+  var sec2nd = document.getElementById('daRightsActor2nd');
+  if (avEl)   avEl.textContent   = initials;
+  if (nameEl2) nameEl2.textContent = name + ' · ' + role;
+  if (sec2nd) {
+    if (item.isHigh) {
+      sec2nd.hidden = false;
+      sec2nd.innerHTML = _DA_2ND_DONE
+        ? '<span class="rights-2nd-ok">✓ ผู้ยืนยันที่ 2: ภก.วิภา · เภสัชกร</span>'
+        : '<span class="rights-2nd-pending">รอผู้ยืนยันที่ 2 (HIGH ALERT)</span>';
+    } else {
+      sec2nd.hidden = true;
+    }
+  }
+
+  listEl.innerHTML = rights.map(function(r, i) {
+    var stateCls = r.ok ? 'ok' : (r.auto ? 'pending' : 'manual');
+    var icon = r.ok
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+      : (r.auto
+          ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>'
+          : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>');
+    var actionBtn = (!r.ok && !r.auto)
+      ? '<button type="button" class="da-rights-confirm" onclick="event.stopPropagation();daConfirmRight(\'' + r.key + '\')">ยืนยัน</button>'
+      : '';
+    return '<div class="da-rights-row ' + stateCls + '">'
+      + '<span class="da-rights-num">' + (i + 1) + '</span>'
+      + '<span class="da-rights-icon">' + icon + '</span>'
+      + '<div class="da-rights-info">'
+      +   '<div class="da-rights-lbl">' + r.lbl + '</div>'
+      +   '<div class="da-rights-sub">' + r.sub + '</div>'
+      + '</div>'
+      + actionBtn
+      + '</div>';
+  }).join('');
+}
+
+function daConfirmRight(key) {
+  var item = _DA_QUEUE[_DA_INDEX];
+  if (!item) return;
+  if (key === 'route') item.rightRouteConfirmed = true;
+  if (key === 'reason') {
+    if (item.allergyMatch) {
+      daShowAlert('ผู้ป่วยแพ้ยานี้',
+        'ห้ามจ่าย — ผู้ป่วยมีประวัติแพ้ <b>' + item.allergyMatch + '</b><br>ติดต่อแพทย์ผู้สั่งยา');
+      return;
+    }
+    item.rightReasonConfirmed = true;
+  }
+  _daRender7Rights();
+  _daRenderDetail();
+}
+
+function _daFindNextPending() {
+  for (var i = 0; i < _DA_QUEUE.length; i++) {
+    if (_DA_QUEUE[i].status === 'pending') return i;
+  }
+  return _DA_QUEUE.length; // all done
+}
+
+function _daRenderHeader() {
+  var p = (MC_STATE.patients || []).find(function(x) { return x.id === _DV_VERIFIED_PATIENT; });
+  if (!p) return;
+  var initials = p.name ? p.name.split(' ').slice(0,2).map(function(w) { return w.charAt(0); }).join('') : '?';
+  var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+  set('daPtAvatar', initials);
+  set('daPtName',   p.name);
+  set('daPtHn',     'HN ' + p.hn);
+  set('daPtBed',    'เตียง ' + p.bed);
+  set('daPtWard',   p.ward);
+
+  var allergyEl     = document.getElementById('daPtAllergy');
+  var allergyListEl = document.getElementById('daPtAllergyList');
+  if (allergyEl) {
+    if (p.allergies && p.allergies.length) {
+      allergyEl.hidden = false;
+      if (allergyListEl) allergyListEl.textContent = p.allergies.join(', ');
+    } else {
+      allergyEl.hidden = true;
+    }
+  }
+}
+
+function _daRenderList() {
+  var listEl  = document.getElementById('daList');
+  var countEl = document.getElementById('daListCount');
+  if (countEl) countEl.textContent = _DA_QUEUE.length + ' รายการ';
+  if (!listEl) return;
+
+  if (!_DA_QUEUE.length) {
+    listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">ไม่มียาที่ต้องจ่าย</div>';
+    return;
+  }
+
+  var svgPill = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>';
+  var svgIV   = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l1 5H7z"/><path d="M7 8a5 5 0 0 0 10 0"/><line x1="12" y1="13" x2="12" y2="18"/></svg>';
+  var svgCheck = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  var svgX     = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  var svgClock = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+  listEl.innerHTML = _DA_QUEUE.map(function(item, i) {
+    var isActive = (i === _DA_INDEX) && item.status === 'pending';
+    var stage = item.stage || 'locked';
+    var rowCls = 'da-list-row' + (isActive ? ' active' : '') + (item.status !== 'pending' ? ' ' + item.status : '');
+    if (item.status === 'pending') rowCls += ' stage-' + stage;
+
+    var ico = svgPill;
+    if (item.status === 'given')   ico = svgCheck;
+    else if (item.status === 'refused') ico = svgX;
+    else if (item.status === 'held')    ico = svgClock;
+    else if (item.drug.type === 'iv')   ico = svgIV;
+
+    var meta = item.route + ' · ' + item.time;
+    if (item.status === 'refused') meta = 'Refuse · ' + (item.reason || '—');
+    else if (item.status === 'held') meta = 'Hold · ' + (item.reason || '—');
+    else if (item.locations && item.locations[0]) {
+      var L = item.locations[0];
+      meta = 'ลิ้นชัก ' + L.drawerId.replace('D','') + ' · Cassette ' + L.slot;
+    }
+
+    // Per-cassette light + unlock button (only for pending pending items)
+    var rowEnd = '';
+    if (item.status === 'pending') {
+      var stateLbl, lightDot;
+      if (stage === 'unlocked' || stage === 'scanning') {
+        stateLbl = 'ไฟเขียว · เปิดได้'; lightDot = '🟢';
+      } else if (stage === 'unlocking') {
+        stateLbl = 'กำลังปลดล็อก...'; lightDot = '🟡';
+      } else if (stage === 'complete') {
+        stateLbl = 'หยิบครบแล้ว'; lightDot = '✓';
+      } else {
+        stateLbl = 'ล็อคอยู่'; lightDot = '🔒';
+      }
+      rowEnd = '<div class="da-list-row-state">' + lightDot + ' ' + stateLbl + '</div>';
+    }
+
+    return '<div class="' + rowCls + '" onclick="daSelectIndex(' + i + ')">'
+      + '<div class="da-list-row-icon">' + ico + '</div>'
+      + '<div class="da-list-row-info">'
+      +   '<div class="da-list-row-name">'
+      +     item.drug.name + (item.drug.dose ? ' ' + item.drug.dose : '')
+      +     (item.isHigh ? ' <span class="da-list-ha-mini">HA</span>' : '')
+      +   '</div>'
+      +   '<div class="da-list-row-meta">' + meta + '</div>'
+      +   (rowEnd ? rowEnd : '')
+      + '</div>'
+      + '<div class="da-list-row-qty">×' + item.qty + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _daRenderDetail() {
+  var item = _DA_QUEUE[_DA_INDEX];
+  var iconEl   = document.getElementById('daDetailIcon');
+  var nameEl   = document.getElementById('daDetailName');
+  var doseEl   = document.getElementById('daDetailDose');
+  var qtyEl    = document.getElementById('daDetailQty');
+  var routeEl  = document.getElementById('daDetailRoute');
+  var roundEl  = document.getElementById('daDetailRound');
+  var timeEl   = document.getElementById('daDetailTime');
+  var stepNum  = document.querySelector('#daDetailStep .da-detail-step-num');
+  var stepTot  = document.getElementById('daDetailStepTotal');
+  var hiBan    = document.getElementById('daHighAlert');
+  var alChk    = document.getElementById('daAllergyCheck');
+  var alMatch  = document.getElementById('daAllergyMatch');
+  var area     = document.getElementById('daScanArea');
+  var line     = document.getElementById('daScanLine');
+  var scanIco  = document.getElementById('daScanIcon');
+  var scanOk   = document.getElementById('daScanSuccess');
+  var hint     = document.getElementById('daScanHint');
+  var counter  = document.getElementById('daScanCounter');
+  var btnGive  = document.getElementById('daBtnGive');
+
+  if (!item) {
+    if (nameEl) nameEl.textContent = 'จ่ายยาครบทุกรายการแล้ว';
+    if (doseEl) doseEl.textContent = '';
+    if (qtyEl)  qtyEl.textContent  = '—';
+    if (routeEl) routeEl.textContent = '—';
+    if (roundEl) roundEl.textContent = '—';
+    if (timeEl)  timeEl.textContent  = '—';
+    if (stepNum) stepNum.textContent = _DA_QUEUE.length;
+    if (stepTot) stepTot.textContent = _DA_QUEUE.length;
+    if (hiBan) hiBan.hidden = true;
+    if (alChk) alChk.hidden = true;
+    if (area) { area.classList.add('scanned'); area.classList.remove('error'); }
+    if (line) line.hidden = true;
+    if (scanIco) scanIco.hidden = true;
+    if (scanOk) scanOk.hidden = false;
+    if (hint) hint.textContent = 'จ่ายครบทุกรายการ ✓';
+    if (counter) counter.hidden = true;
+    if (btnGive) btnGive.disabled = true;
+    var pendingEl = document.getElementById('da2ndPending');
+    if (pendingEl) pendingEl.hidden = true;
+    daClose2ndModal();
+    document.querySelectorAll('.da-btn').forEach(function(b) { b.disabled = true; });
+    return;
+  }
+
+  // Re-enable buttons (if they were disabled in done state)
+  document.querySelectorAll('.da-btn:not(#daBtnGive)').forEach(function(b) { b.disabled = false; });
+
+  var d = item.drug;
+  if (iconEl) {
+    iconEl.className = 'da-detail-icon' + (item.isHigh ? ' high-alert' : (d.type === 'iv' ? ' iv' : ''));
+  }
+  if (nameEl) nameEl.textContent = d.name;
+  if (doseEl) doseEl.textContent = d.dose ? (d.dose + ' · ' + (d.type === 'iv' ? 'ยาฉีด/IV' : 'ยากิน')) : '';
+  if (qtyEl)  qtyEl.textContent  = '×' + item.qty + ' ' + (item.route === 'IV' ? 'ถุง' : 'เม็ด');
+  if (routeEl) routeEl.textContent = item.route;
+  if (roundEl) roundEl.textContent = 'รอบ' + item.round;
+  if (timeEl)  timeEl.textContent  = item.time;
+  if (stepNum) stepNum.textContent = (_DA_INDEX + 1);
+  if (stepTot) stepTot.textContent = _DA_QUEUE.length;
+
+  // High alert banner
+  if (hiBan) hiBan.hidden = !item.isHigh;
+
+  // Allergy check banner
+  if (item.allergyMatch) {
+    if (alChk)   alChk.hidden = false;
+    if (alMatch) alMatch.textContent = item.allergyMatch;
+  } else {
+    if (alChk) alChk.hidden = true;
+  }
+
+  // ── New: render drawer location list + unlock state ──
+  var locCard    = document.getElementById('daLocCard');
+  var locCount   = document.getElementById('daLocCount');
+  var locList    = document.getElementById('daLocList');
+  var locLight   = document.getElementById('daLocLight');
+  var locLightTx = document.getElementById('daLocLightTxt');
+  var unlockBtn  = document.getElementById('daUnlockBtn');
+  var unlockCnt  = document.getElementById('daUnlockCount');
+  var qtyCard    = document.getElementById('daQtyCard');
+  var qtyDone    = document.getElementById('daQtyDone');
+  var qtyTotal   = document.getElementById('daQtyTotal');
+  var qtyFill    = document.getElementById('daQtyFill');
+  var qtyRemain  = document.getElementById('daQtyRemain');
+
+  var locs    = item.locations || [];
+  var unlocked = (item.stage === 'unlocked' || item.stage === 'scanning' || item.stage === 'complete');
+  var unlocking = item.stage === 'unlocking';
+
+  // Location count text
+  if (locCount) {
+    if (locs.length === 0) locCount.textContent = 'ไม่มีในรถเข็น';
+    else if (locs.length === 1) locCount.textContent = '1 ตำแหน่ง';
+    else locCount.textContent = locs.length + ' ตำแหน่ง · เปิดพร้อมกัน';
+  }
+
+  // Render location rows — each row gets its own light state
+  if (locList) {
+    if (!locs.length) {
+      locList.innerHTML = '<div class="da-loc-empty">ยานี้ไม่มีใน Cassette ของรถเข็น</div>';
+    } else {
+      locList.innerHTML = locs.map(function(L, i) {
+        var rowState = unlocked ? 'unlocked' : (unlocking ? 'unlocking' : 'locked');
+        var stateLbl = unlocked ? '🟢 เปิดได้' : (unlocking ? '🟡 กำลังปลดล็อก' : '🔒 ล็อคอยู่');
+        return '<div class="da-loc-item" data-state="' + rowState + '">'
+          + '<span class="da-loc-item-num">' + (i + 1) + '</span>'
+          + '<span class="da-loc-item-name">ลิ้นชัก ' + L.drawerId.replace('D','') + ' · Cassette ' + L.slot + '</span>'
+          + '<span class="da-loc-item-light">' + stateLbl + '</span>'
+          + '</div>';
+      }).join('');
+    }
+  }
+
+  // Lock state UI on the card + summary pill
+  if (locCard) locCard.setAttribute('data-state', unlocked ? 'unlocked' : (unlocking ? 'unlocking' : 'locked'));
+  if (locLight) {
+    locLight.setAttribute('data-state', unlocked ? 'unlocked' : (unlocking ? 'unlocking' : 'locked'));
+  }
+  if (locLightTx) {
+    locLightTx.textContent =
+      unlocked ? (locs.length > 1 ? 'ไฟเขียว · ' + locs.length + ' ช่อง' : 'ไฟเขียว — เปิดได้')
+      : unlocking ? 'กำลังปลดล็อก...' : (locs.length > 1 ? 'ล็อคอยู่ · ' + locs.length + ' ช่อง' : 'ล็อคอยู่');
+  }
+  if (unlockBtn) {
+    unlockBtn.disabled = item.stage !== 'locked' || locs.length === 0;
+    unlockBtn.style.display = (item.stage === 'locked' || item.stage === 'unlocking') ? '' : 'none';
+  }
+  if (unlockCnt) {
+    unlockCnt.textContent = locs.length > 1 ? '(' + locs.length + ' ช่อง)' : '';
+  }
+
+  // Quantity progress card — 1 bag containing N pills/units
+  if (qtyCard) {
+    var showQty = item.stage === 'unlocked' || item.stage === 'scanning' || item.stage === 'complete';
+    qtyCard.hidden = !showQty;
+    qtyCard.classList.toggle('complete', item.scannedCount >= 1);
+    var unitTxt = item.route === 'IV' ? 'ขวด' : 'เม็ด';
+    if (qtyDone)  qtyDone.textContent  = item.scannedCount;
+    if (qtyTotal) qtyTotal.textContent = '1';
+    if (qtyFill)  qtyFill.style.width  = (item.scannedCount >= 1 ? 100 : 0) + '%';
+    if (qtyRemain) {
+      qtyRemain.textContent = item.scannedCount >= 1
+        ? '✓ สแกนถุงยาแล้ว · ยา ' + item.qty + ' ' + unitTxt + ' · ' + (item.drug.dose || '')
+        : 'หยิบ 1 ถุง (บรรจุ ' + item.qty + ' ' + unitTxt + ') แล้วสแกน Barcode';
+    }
+  }
+
+  // Scan area visibility — only show when unlocked & bag not yet scanned
+  var scanShouldShow = (item.stage === 'unlocked' || item.stage === 'scanning') && item.scannedCount < 1;
+  if (area) area.style.display = scanShouldShow ? '' : 'none';
+
+  // Reset scan UI
+  if (area) { area.classList.remove('scanned'); area.classList.remove('error'); }
+  if (line) line.hidden = false;
+  if (scanIco) scanIco.hidden = false;
+  if (scanOk) scanOk.hidden = true;
+  if (hint) {
+    if (item.allergyMatch)              hint.textContent = 'ห้ามจ่าย — ผู้ป่วยแพ้ยานี้';
+    else if (item.scannedCount >= 1 && item.isHigh && !_DA_2ND_DONE)
+                                        hint.textContent = '✓ สแกนถุงแล้ว — รอพยาบาลคนที่ 2 ยืนยัน';
+    else if (item.scannedCount >= 1)    hint.textContent = '✓ สแกนแล้ว — กดปุ่ม "จ่ายแล้ว"';
+    else if (item.isHigh)               hint.textContent = 'High Alert · แตะเพื่อสแกน Barcode บนถุงยา';
+    else                                hint.textContent = 'แตะเพื่อสแกน Barcode บนถุงยา';
+  }
+  if (counter) counter.hidden = true;
+
+  // 7 Rights checklist
+  _daRender7Rights();
+
+  // "จ่ายแล้ว" button — must pass all 7 Rights (+ HA: 2nd nurse verified)
+  var rights = _da7Rights(item);
+  // Right Documentation auto-✓ AFTER we mark given — exclude from pre-gate
+  var preDocOk = rights.filter(function(r) { return r.key !== 'doc'; }).every(function(r) { return r.ok; });
+  var haOk = !item.isHigh || _DA_2ND_DONE;
+  if (btnGive) btnGive.disabled = !(preDocOk && haOk);
+
+  // Inline pending pill — appears only if HA bag scanned but 2nd nurse not yet verified
+  var pending = document.getElementById('da2ndPending');
+  if (pending) pending.hidden = !(item.isHigh && item.scannedCount >= 1 && !_DA_2ND_DONE);
+}
+
+function _daUpdateBottomBar() {
+  var done    = _DA_QUEUE.filter(function(x) { return x.status === 'given';   }).length;
+  var refused = _DA_QUEUE.filter(function(x) { return x.status === 'refused'; }).length;
+  var held    = _DA_QUEUE.filter(function(x) { return x.status === 'held';    }).length;
+  var total   = _DA_QUEUE.length;
+  var anyDone = (done + refused + held) > 0;            // ← partial submission OK
+  var allDone = (done + refused + held) === total;
+
+  var sum = document.getElementById('daConfirmSummary');
+  var btn = document.getElementById('daConfirmBtn');
+  var doneEl  = document.getElementById('daProgressDone');
+  var totalEl = document.getElementById('daProgressTotal');
+
+  if (sum) {
+    if (!anyDone) {
+      sum.textContent = 'ยังไม่ได้จ่ายยา · เลือกยาเริ่มจ่าย';
+    } else if (allDone) {
+      sum.textContent = 'จ่ายครบ ' + total + ' รายการ — กดยืนยันเพื่อบันทึก MAR';
+    } else {
+      var remain = total - (done + refused + held);
+      sum.textContent = 'จ่ายแล้ว ' + done + (refused ? ' · Refuse ' + refused : '') + (held ? ' · Hold ' + held : '') + ' · เหลือ ' + remain + ' รายการ';
+    }
+  }
+  // Allow partial confirm — เปิดปุ่มทันทีที่จ่าย/refuse/hold ยา 1 ตัว
+  if (btn) {
+    btn.disabled = !anyDone;
+    btn.textContent = '';
+    var label = allDone ? 'ดูสรุปการจ่าย' : 'บันทึกที่จ่ายไปก่อน → ค่อยกลับมา';
+    btn.innerHTML = label + ' <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+  }
+  if (doneEl)  doneEl.textContent  = done;
+  if (totalEl) totalEl.textContent = total;
+}
+
+function daSelectIndex(i) {
+  if (i < 0 || i >= _DA_QUEUE.length) return;
+  if (_DA_QUEUE[i].status !== 'pending') return; // can't go back to completed ones
+  _DA_INDEX = i;
+  _DA_SCAN_COUNT = 0;
+  _DA_2ND_DONE   = false;
+  daClose2ndModal();
+  _daRenderList();
+  _daRenderDetail();
+}
+
+/* Step A: Press unlock — simulate hardware: blink yellow → green light */
+function daUnlockDrawer() {
+  var item = _DA_QUEUE[_DA_INDEX];
+  if (!item || item.stage !== 'locked') return;
+  if (item.allergyMatch) {
+    daShowAlert('แพ้ยา (Drug Allergy)',
+      'ผู้ป่วยมีประวัติแพ้ <b>' + item.allergyMatch + '</b><br>ห้ามให้ยาตัวนี้เด็ดขาด');
+    return;
+  }
+  item.stage = 'unlocking';
+  _daRenderDetail();
+  // Simulate hardware unlock — 800ms then green
+  setTimeout(function() {
+    if (_DA_QUEUE[_DA_INDEX] === item) {
+      item.stage = 'unlocked';
+      _daRenderDetail();
+    }
+  }, 800);
+}
+
+/* Scan: 1 bag = 1 scan. HIGH ALERT additionally requires the 2nd-nurse modal. */
+function daSimulateScan() {
+  var item = _DA_QUEUE[_DA_INDEX];
+  if (!item || item.status !== 'pending') return;
+  if (item.stage === 'locked' || item.stage === 'unlocking') return;
+  if (item.scannedCount >= 1) return;     // already scanned (1 bag per dose)
+
+  // Single scan = 1 bag complete (whether HA or not)
+  _DA_SCAN_COUNT     = 1;
+  item.scannedCount  = 1;
+  item.stage         = 'complete';
+
+  var area = document.getElementById('daScanArea');
+  if (area) {
+    area.classList.add('scanned');
+    setTimeout(function() {
+      if (area) area.classList.remove('scanned');
+      _daRenderDetail();
+      // High alert → auto-open the 2nd-nurse badge scan modal
+      if (item.isHigh && !_DA_2ND_DONE) daOpen2ndModal();
+    }, 400);
+  } else {
+    _daRenderDetail();
+    if (item.isHigh && !_DA_2ND_DONE) daOpen2ndModal();
+  }
+}
+
+/* HIGH ALERT — open the 2nd-nurse badge scan modal */
+function daOpen2ndModal() {
+  var item = _DA_QUEUE[_DA_INDEX];
+  if (!item || !item.isHigh || _DA_2ND_DONE) return;
+  var modal = document.getElementById('da2ndModal');
+  if (!modal) return;
+
+  // Reset visuals each time it opens
+  var area = document.getElementById('da2ndScanArea');
+  var line = document.getElementById('da2ndScanLine');
+  var ico  = document.getElementById('da2ndScanIcon');
+  var ok   = document.getElementById('da2ndScanSuccess');
+  var hint = document.getElementById('da2ndScanHint');
+  var dn   = document.getElementById('da2ndDrugName');
+  if (area) { area.classList.remove('scanning'); area.classList.remove('scanned'); }
+  if (line) line.hidden = false;
+  if (ico)  ico.hidden  = false;
+  if (ok)   ok.hidden   = true;
+  if (hint) hint.textContent = 'แตะเพื่อจำลองการสแกนบัตรพนักงาน';
+  if (dn && item.drug) dn.textContent = item.drug.name + (item.drug.dose ? ' ' + item.drug.dose : '');
+
+  modal.hidden = false;
+}
+
+function daClose2ndModal() {
+  var modal = document.getElementById('da2ndModal');
+  if (modal) modal.hidden = true;
+}
+
+/* HIGH ALERT 2nd-nurse verification — scan their employee badge */
+function daScan2ndNurse() {
+  var item = _DA_QUEUE[_DA_INDEX];
+  if (!item || !item.isHigh) return;
+  if (item.scannedCount < 1) return;   // bag must be scanned first
+  if (_DA_2ND_DONE) return;
+
+  var area = document.getElementById('da2ndScanArea');
+  var line = document.getElementById('da2ndScanLine');
+  var ico  = document.getElementById('da2ndScanIcon');
+  var ok   = document.getElementById('da2ndScanSuccess');
+  var hint = document.getElementById('da2ndScanHint');
+
+  // Animate scan
+  if (area) area.classList.add('scanning');
+  if (hint) hint.textContent = 'กำลังอ่าน Barcode บัตรพนักงาน...';
+
+  setTimeout(function() {
+    if (area) { area.classList.remove('scanning'); area.classList.add('scanned'); }
+    if (line) line.hidden = true;
+    if (ico)  ico.hidden  = true;
+    if (ok)   ok.hidden   = false;
+    if (hint) hint.textContent = '✓ ภก.วิภา · เภสัชกร — ยืนยันแล้ว';
+
+    _DA_2ND_DONE = true;
+
+    setTimeout(function() {
+      daClose2ndModal();
+      var sHint = document.getElementById('daScanHint');
+      if (sHint) sHint.textContent = 'พยาบาลคนที่ 2 ยืนยันแล้ว ✓ — กดปุ่ม "จ่ายแล้ว"';
+      _daRenderDetail();
+    }, 700);
+  }, 700);
+}
+
+/* legacy alias — keep in case any old binding still calls it */
+function daConfirm2ndNurse() { daScan2ndNurse(); }
+
+function daMarkGiven() {
+  var item = _DA_QUEUE[_DA_INDEX];
+  if (!item) return;
+
+  // Must unlock + scan all pills first
+  if (item.stage === 'locked' || item.stage === 'unlocking') {
+    daShowAlert('ยังไม่ได้ปลดล็อก', 'กดปุ่ม "ปลดล็อกลิ้นชัก" ก่อนหยิบยา');
+    return;
+  }
+  if (item.scannedCount < 1) {
+    daShowAlert('ยังไม่ได้สแกนยา', 'กรุณาสแกน Barcode บนถุงยา 1 ครั้งก่อนกดจ่าย');
+    return;
+  }
+  // 7 Rights gate (excluding documentation which auto-✓ after this step)
+  var rights = _da7Rights(item);
+  var failed = rights.filter(function(r) { return r.key !== 'doc' && !r.ok; });
+  if (failed.length) {
+    daShowAlert('ยังไม่ผ่าน 7 Rights',
+      'ยังขาด: <b>' + failed.map(function(r) { return r.lbl; }).join(', ') + '</b><br>กรุณาตรวจสอบและยืนยันให้ครบก่อนกดจ่ายยา');
+    return;
+  }
+  // High alert: also needs 2nd nurse to scan their badge
+  if (item.isHigh && !_DA_2ND_DONE) {
+    daShowAlert('ขั้นตอนไม่ครบ',
+      'ยา HIGH ALERT ต้องให้พยาบาลคนที่ 2 สแกนบัตรพนักงานยืนยันก่อน');
+    daOpen2ndModal();
+    return;
+  }
+
+  // Stamp the dispense event — feeds into Right Documentation sub-text
+  var now = new Date();
+  var pad2 = function(n) { return String(n).padStart(2, '0'); };
+  item.status  = 'given';
+  item.givenAt = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+  var u = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+  item.givenBy = (u && u.name) || MC_STATE.currentUser || 'พยาบาล';
+
+  var ord = (MC_STATE.orders || []).find(function(o) { return o.id === item.orderId; });
+  if (ord) {
+    ord.status = 'DONE';
+    ord.dispensedQty = item.scannedCount;
+    ord.dispensedAt  = now.getTime();
+    ord.dispensedBy  = item.givenBy;
+  }
+
+  // Audit per-item (separate from MAR_SAVED)
+  if (typeof addAudit === 'function') {
+    try {
+      addAudit({
+        action:    'DRUG_GIVEN',
+        user:      item.givenBy,
+        patient:   ((MC_STATE.patients || []).find(function(p) { return p.id === _DV_VERIFIED_PATIENT; }) || {}).name,
+        drugLabel: item.drug.name + ' ' + item.drug.dose + ' ×' + item.scannedCount + ' ' + (item.route === 'IV' ? 'ถุง' : 'ถุง')
+      });
+    } catch (e) {}
+  }
+
+  _daAdvance();
+}
+
+function _daAdvance() {
+  _DA_SCAN_COUNT = 0;
+  _DA_2ND_DONE   = false;
+  _DA_INDEX = _daFindNextPending();
+  _daRenderList();
+  _daRenderDetail();
+  _daUpdateBottomBar();
+}
+
+function daMarkRefused() {
+  _DA_PENDING_ACTION = 'refused';
+  daShowReason('Refuse — เหตุผลที่ผู้ป่วยปฏิเสธ', [
+    'ผู้ป่วยปฏิเสธ',
+    'ผู้ป่วยหลับ / ไม่รู้สึกตัว',
+    'ผู้ป่วยไม่อยู่เตียง',
+    'อาการแพ้ / ผลข้างเคียง',
+    'ออกจากโรงพยาบาล',
+    'อื่นๆ'
+  ]);
+}
+
+function daMarkHeld() {
+  _DA_PENDING_ACTION = 'held';
+  daShowReason('Hold / Late — เหตุผลที่เลื่อนการให้ยา', [
+    'รอผลตรวจ',
+    'รอแพทย์อนุมัติ',
+    'NPO (งดอาหาร)',
+    'สัญญาณชีพไม่อยู่ในเกณฑ์',
+    'ยาไม่พอ',
+    'อื่นๆ'
+  ]);
+}
+
+function daShowReason(title, reasons) {
+  var overlay = document.getElementById('daReasonOverlay');
+  var titleEl = document.getElementById('daReasonTitle');
+  var listEl  = document.getElementById('daReasonList');
+  if (!overlay || !titleEl || !listEl) return;
+  titleEl.textContent = title;
+  listEl.innerHTML = reasons.map(function(r) {
+    return '<button type="button" class="da-reason-item" onclick="daApplyReason(\'' + r.replace(/'/g, "\\'") + '\')">' + r + '</button>';
+  }).join('');
+  overlay.hidden = false;
+}
+
+function daCloseReason(e) {
+  if (e && e.target && e.target.id !== 'daReasonOverlay') return;
+  var overlay = document.getElementById('daReasonOverlay');
+  if (overlay) overlay.hidden = true;
+  _DA_PENDING_ACTION = null;
+}
+
+function daApplyReason(reason) {
+  var item = _DA_QUEUE[_DA_INDEX];
+  if (!item || !_DA_PENDING_ACTION) { daCloseReason(); return; }
+  item.status = _DA_PENDING_ACTION;
+  item.reason = reason;
+  daCloseReason();
+  _daAdvance();
+}
+
+function daShowAlert(title, msgHtml) {
+  var overlay = document.getElementById('daAlertOverlay');
+  var titleEl = document.getElementById('daAlertTitle');
+  var msgEl   = document.getElementById('daAlertMsg');
+  var primary = document.getElementById('daAlertPrimary');
+  var secondary = document.getElementById('daAlertSecondary');
+  if (!overlay) return;
+  if (titleEl) titleEl.textContent = title;
+  if (msgEl)   msgEl.innerHTML     = msgHtml;
+  // For allergy/critical alerts, only show "Acknowledge" (no continue)
+  if (primary)  primary.style.display = 'none';
+  if (secondary) secondary.textContent = 'รับทราบ';
+  overlay.hidden = false;
+}
+
+function daCloseAlert(e) {
+  if (e && e.target && e.target.id !== 'daAlertOverlay') return;
+  var overlay = document.getElementById('daAlertOverlay');
+  if (overlay) overlay.hidden = true;
+}
+
+function daFinishRound() {
+  location.hash = '#pg-dispense-summary';
+}
+
+
+/* ════════════════════════════════════════════════════════
+   DISPENSE FLOW — Page 5: Summary & Confirmation (MAR)
+   ════════════════════════════════════════════════════════ */
+
+function initDispenseSummary() {
+  if (location.hash.replace('#','') !== 'pg-dispense-summary') return;
+  seedMcData();
+
+  if (!_DV_VERIFIED_PATIENT || !_DA_QUEUE.length) {
+    location.hash = '#pg-dispense-verify';
+    return;
+  }
+
+  _dsRenderHero();
+  _dsRenderMeta();
+  _dsRenderSections();
+}
+
+function _dsRenderHero() {
+  var given   = _DA_QUEUE.filter(function(x) { return x.status === 'given';   }).length;
+  var refused = _DA_QUEUE.filter(function(x) { return x.status === 'refused'; }).length;
+  var held    = _DA_QUEUE.filter(function(x) { return x.status === 'held';    }).length;
+  var total   = _DA_QUEUE.length;
+
+  var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+  set('dsStatGiven',   given);
+  set('dsStatHeld',    held);
+  set('dsStatRefused', refused);
+
+  var titleEl = document.getElementById('dsHeroTitle');
+  var subEl   = document.getElementById('dsHeroSub');
+  if (refused === 0 && held === 0) {
+    if (titleEl) titleEl.textContent = 'จ่ายยาครบทุกรายการ';
+    if (subEl)   subEl.textContent   = total + ' รายการ ดำเนินการครบถ้วน · รอยืนยันบันทึก MAR';
+  } else if (given === total) {
+    if (titleEl) titleEl.textContent = 'จ่ายยาเสร็จสิ้น';
+    if (subEl)   subEl.textContent   = 'ดำเนินการครบ ' + total + ' รายการ';
+  } else {
+    if (titleEl) titleEl.textContent = 'สรุปการจ่ายยา';
+    if (subEl)   subEl.textContent   = 'จ่ายแล้ว ' + given + ' · Hold ' + held + ' · Refuse ' + refused + ' จาก ' + total + ' รายการ';
+  }
+}
+
+function _dsRenderMeta() {
+  var p = (MC_STATE.patients || []).find(function(x) { return x.id === _DV_VERIFIED_PATIENT; });
+  if (!p) return;
+  var initials = p.name ? p.name.split(' ').slice(0,2).map(function(w) { return w.charAt(0); }).join('') : '?';
+  var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+  set('dsAvatar', initials);
+  set('dsName',   p.name);
+  set('dsPtLine', 'HN ' + p.hn + ' · เตียง ' + p.bed + ' · ' + p.ward);
+  set('dsRound',  _DV_ROUND_LABEL[_DV_ROUND] || '—');
+  set('dsNurse',  MC_STATE.currentUser || '—');
+
+  // Current time HH:MM
+  var now = new Date();
+  var hh  = String(now.getHours()).padStart(2,'0');
+  var mm  = String(now.getMinutes()).padStart(2,'0');
+  set('dsTime', hh + ':' + mm);
+}
+
+function _dsRenderSections() {
+  var given   = _DA_QUEUE.filter(function(x) { return x.status === 'given';   });
+  var held    = _DA_QUEUE.filter(function(x) { return x.status === 'held';    });
+  var refused = _DA_QUEUE.filter(function(x) { return x.status === 'refused'; });
+
+  // Given section
+  var secGiven = document.getElementById('dsSecGiven');
+  var cntGiven = document.getElementById('dsCntGiven');
+  var listGiven = document.getElementById('dsListGiven');
+  if (cntGiven)  cntGiven.textContent = given.length + ' รายการ';
+  if (secGiven)  secGiven.hidden = given.length === 0;
+  if (listGiven) listGiven.innerHTML = _dsRenderRows(given, 'given');
+
+  // Held section
+  var secHeld = document.getElementById('dsSecHeld');
+  var cntHeld = document.getElementById('dsCntHeld');
+  var listHeld = document.getElementById('dsListHeld');
+  if (cntHeld)  cntHeld.textContent = held.length + ' รายการ';
+  if (secHeld)  secHeld.hidden = held.length === 0;
+  if (listHeld) listHeld.innerHTML = _dsRenderRows(held, 'held');
+
+  // Refused section
+  var secRefused = document.getElementById('dsSecRefused');
+  var cntRefused = document.getElementById('dsCntRefused');
+  var listRefused = document.getElementById('dsListRefused');
+  if (cntRefused)  cntRefused.textContent = refused.length + ' รายการ';
+  if (secRefused)  secRefused.hidden = refused.length === 0;
+  if (listRefused) listRefused.innerHTML = _dsRenderRows(refused, 'refused');
+}
+
+function _dsRenderRows(items, type) {
+  if (!items.length) return '';
+  var svgPill = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>';
+  var svgIV   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l1 5H7z"/><path d="M7 8a5 5 0 0 0 10 0"/><line x1="12" y1="13" x2="12" y2="18"/></svg>';
+
+  // Stagger times for "given" — base on _DV_ROUND start time
+  var roundTime = { morning:'08:00', noon:'12:00', evening:'16:00', bedtime:'20:00' }[_DV_ROUND] || '08:00';
+  var baseHr = parseInt(roundTime.split(':')[0], 10);
+  var baseMin = parseInt(roundTime.split(':')[1], 10);
+
+  return items.map(function(item, i) {
+    var d = item.drug;
+    var isIV   = d.type === 'iv';
+    var iconCls = item.isHigh ? 'ha' : (isIV ? 'iv' : '');
+    var unit    = isIV ? 'ถุง' : 'เม็ด';
+
+    var meta;
+    if (type === 'given') {
+      var mins = baseMin + i * 2;
+      var hh   = String(baseHr + Math.floor(mins/60)).padStart(2,'0');
+      var mm   = String(mins % 60).padStart(2,'0');
+      meta = item.route + ' · ×' + item.qty + ' ' + unit + (item.isHigh ? ' · ยืนยัน 2 พยาบาล' : '');
+      var timeText = hh + ':' + mm;
+      return '<div class="ds-sec-row">'
+        + '<div class="ds-sec-row-icon ' + iconCls + '">' + (isIV ? svgIV : svgPill) + '</div>'
+        + '<div class="ds-sec-row-info">'
+        +   '<div class="ds-sec-row-name">' + d.name + (d.dose ? ' ' + d.dose : '')
+        +     (item.isHigh ? ' <span class="ds-ha-pill">HA</span>' : '')
+        +   '</div>'
+        +   '<div class="ds-sec-row-meta">' + meta + '</div>'
+        + '</div>'
+        + '<div class="ds-sec-row-time">' + timeText + '</div>'
+        + '</div>';
+    }
+
+    // held / refused — show reason instead of time
+    meta = item.route + ' · ×' + item.qty + ' ' + unit;
+    var reasonText = '<b style="color:' + (type === 'held' ? '#1d4ed8' : '#c2410c') + ';">เหตุผล:</b> ' + (item.reason || '—');
+    return '<div class="ds-sec-row">'
+      + '<div class="ds-sec-row-icon ' + iconCls + '">' + (isIV ? svgIV : svgPill) + '</div>'
+      + '<div class="ds-sec-row-info">'
+      +   '<div class="ds-sec-row-name">' + d.name + (d.dose ? ' ' + d.dose : '')
+      +     (item.isHigh ? ' <span class="ds-ha-pill">HA</span>' : '')
+      +   '</div>'
+      +   '<div class="ds-sec-row-meta" style="font-size:11.5px;">' + reasonText + '</div>'
+      + '</div>'
+      + '<div class="ds-sec-row-time" style="background:' + (type === 'held' ? '#dbeafe;color:#1d4ed8;' : '#ffedd5;color:#c2410c;') + '">'
+      +   (type === 'held' ? 'Hold' : 'Refuse')
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function dsConfirmAndSave() {
+  var p = (MC_STATE.patients || []).find(function(x) { return x.id === _DV_VERIFIED_PATIENT; });
+  var notes = (document.getElementById('dsNotes') || {}).value || '';
+  var given   = _DA_QUEUE.filter(function(x) { return x.status === 'given';   }).length;
+  var refused = _DA_QUEUE.filter(function(x) { return x.status === 'refused'; }).length;
+  var held    = _DA_QUEUE.filter(function(x) { return x.status === 'held';    }).length;
+
+  if (typeof addAudit === 'function' && p) {
+    try {
+      addAudit({
+        action: 'MAR_SAVED',
+        user:   MC_STATE.currentUser || 'Nurse',
+        patient: p.name,
+        drugLabel: 'จ่ายแล้ว ' + given + ' · Hold ' + held + ' · Refuse ' + refused + (notes ? ' · ' + notes : '')
+      });
+    } catch (e) {}
+  }
+
+  // ── Smart routing: check if more patients pending in this round ──
+  var roundTh = _DV_ROUND_TH[_DV_ROUND] || 'เช้า';
+  var stillPending = (MC_STATE.orders || []).some(function(o) {
+    return isPatientInCurrentCart(o.patientId)
+      && o.status === 'PENDING'
+      && o.rounds && o.rounds.indexOf(roundTh) !== -1
+      && o.patientId !== _DV_VERIFIED_PATIENT;
+  });
+
+  // Reset session state
+  _DA_QUEUE = [];
+  _DA_INDEX = 0;
+  _DV_VERIFIED_PATIENT = null;
+
+  if (stillPending) {
+    showSmcToast('✓ บันทึก MAR สำเร็จ', (p ? p.name : '—') + ' · จ่าย ' + given + (held ? ' · Hold ' + held : '') + (refused ? ' · Refuse ' + refused : ''), 'success');
+    location.hash = '#pg-dispense-queue';
+  } else {
+    var label = ({ morning:'รอบเช้า', noon:'รอบกลางวัน', evening:'รอบเย็น', bedtime:'รอบก่อนนอน' })[_DV_ROUND] || 'รอบนี้';
+    showSmcToast('🎉 จบ' + label + 'แล้ว', 'จ่ายยาครบทุกผู้ป่วยใน ' + label + ' · เลือกรอบถัดไปได้เลย', 'success', 4000);
+    location.hash = '#pg-dispense-rounds';
+  }
+}
+
+/* ─── Generic toast (auto-dismiss) ───────────────────────────── */
+function showSmcToast(title, sub, tone, durationMs) {
+  tone = tone || 'success';
+  durationMs = durationMs || 2800;
+
+  var stack = document.getElementById('smcToastStack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'smcToastStack';
+    stack.className = 'smc-toast-stack';
+    document.body.appendChild(stack);
+  }
+
+  var t = document.createElement('div');
+  t.className = 'smc-toast tone-' + tone;
+  t.innerHTML =
+    '<div class="smc-toast-icon">' +
+      (tone === 'success'
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>') +
+    '</div>' +
+    '<div class="smc-toast-body">' +
+      '<div class="smc-toast-title">' + title + '</div>' +
+      (sub ? '<div class="smc-toast-sub">' + sub + '</div>' : '') +
+    '</div>';
+  t.onclick = function() { dismissSmcToast(t); };
+  stack.appendChild(t);
+
+  setTimeout(function() { dismissSmcToast(t); }, durationMs);
+}
+
+function dismissSmcToast(t) {
+  if (!t || !t.parentNode) return;
+  t.classList.add('leaving');
+  setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 250);
+}
+
+
+/* ════════════════════════════════════════════════════════
+   DISPENSE FLOW — Page 1: Round Selection
+   ════════════════════════════════════════════════════════ */
+
+function initDispenseRounds() {
+  if (location.hash.replace('#','') !== 'pg-dispense-rounds') return;
+  seedMcData();
+
+  // Auto-detect current round
+  var hr = new Date().getHours();
+  var current;
+  if      (hr < 10)  current = 'morning';
+  else if (hr < 14)  current = 'noon';
+  else if (hr < 18)  current = 'evening';
+  else               current = 'bedtime';
+
+  // Render date
+  var now = new Date();
+  var thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var dateStr = now.getDate() + ' ' + thMonths[now.getMonth()] + ' ' + (now.getFullYear() + 543);
+  var dateEl = document.getElementById('drDate');
+  if (dateEl) dateEl.textContent = dateStr;
+
+  // Compute stats per round (current ward)
+  var orders = _wardOrders();
+  var rounds = ['morning','noon','evening','bedtime'];
+  var roundTh = { morning:'เช้า', noon:'กลางวัน', evening:'เย็น', bedtime:'ก่อนนอน' };
+  var capName = { morning:'Morning', noon:'Noon', evening:'Evening', bedtime:'Bedtime' };
+
+  // Hero stats — total ward
+  var allPatients = (new Set(orders.map(function(o) { return o.patientId; }))).size;
+  var setText = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+  setText('drStatPatients', allPatients);
+  setText('drStatOrders',   orders.length);
+
+  // Per-round stats
+  rounds.forEach(function(r) {
+    var th = roundTh[r];
+    var roundOrders = orders.filter(function(o) { return o.rounds && o.rounds.indexOf(th) !== -1; });
+    var pCount = (new Set(roundOrders.map(function(o) { return o.patientId; }))).size;
+    var oCount = roundOrders.length;
+    var done   = roundOrders.filter(function(o) { return o.status === 'DONE'; }).length;
+
+    setText('dr' + capName[r] + 'Patients', pCount);
+    setText('dr' + capName[r] + 'Orders',   oCount);
+    setText('dr' + capName[r] + 'Done',     done);
+    setText('dr' + capName[r] + 'Total',    oCount);
+
+    var fill = document.getElementById('dr' + capName[r] + 'Fill');
+    if (fill) fill.style.width = (oCount > 0 ? Math.round(done / oCount * 100) : 0) + '%';
+  });
+
+  // Highlight current round
+  document.querySelectorAll('.dr-round-card').forEach(function(card) {
+    card.classList.remove('current');
+  });
+  var curCard  = document.querySelector('.dr-round-card[data-round="' + current + '"]');
+  if (curCard) curCard.classList.add('current');
+  ['Morning','Noon','Evening','Bedtime'].forEach(function(c) {
+    var el = document.getElementById('drCur' + c); if (el) el.hidden = true;
+  });
+  var curBadge = document.getElementById('drCur' + capName[current]);
+  if (curBadge) curBadge.hidden = false;
+
+  // Hero sub
+  var subEl = document.getElementById('drHeroSub');
+  if (subEl) {
+    subEl.innerHTML = 'ผู้ป่วยใน <span data-ward-name>' + (getCurrentWard() ? getCurrentWard().name : 'Ward') + '</span> ทั้งหมด ' + allPatients + ' คน · รายการยาทั้งวัน ' + orders.length + ' รายการ';
+  }
+
+  // STAT/PRN — for demo, count "high alert" pending orders as urgent
+  var statCount = orders.filter(function(o) {
+    return o.status === 'PENDING' && _DA_HIGH_ALERT.indexOf(o.drugId) !== -1;
+  }).length;
+  var statCard  = document.getElementById('drStatCard');
+  var statSub   = document.getElementById('drStatSub');
+  var statBadge = document.getElementById('drStatBadge');
+  var statCnt   = document.getElementById('drStatCount');
+  if (statCard) {
+    if (statCount > 0) {
+      statCard.classList.add('has-urgent');
+      if (statSub)   statSub.textContent = 'มียา HIGH ALERT รอจ่าย — ต้องดำเนินการก่อน';
+      if (statBadge) statBadge.hidden = false;
+      if (statCnt)   statCnt.textContent = statCount;
+    } else {
+      statCard.classList.remove('has-urgent');
+      if (statSub)   statSub.textContent = 'ไม่มีรายการยาด่วน';
+      if (statBadge) statBadge.hidden = true;
+    }
+  }
+
+  // Status bar (4 stats — across all rounds today)
+  var pending = orders.filter(function(o) { return o.status === 'PENDING'; }).length;
+  var given   = orders.filter(function(o) { return o.status === 'DONE';    }).length;
+  var skipped = orders.filter(function(o) { return o.status === 'SKIPPED'; }).length;
+  setText('drStatusPending', pending);
+  setText('drStatusGiven',   given);
+  setText('drStatusRefuse',  0);  // not tracked yet
+  setText('drStatusLate',    skipped);
+}
+
+function drSelectRound(round) {
+  _DV_ROUND = round;
+  _DV_VERIFIED_PATIENT = null;  // reset patient verification
+  location.hash = '#pg-dispense-queue';
+}
+
+function drSelectStat() {
+  // Filter to only HIGH ALERT pending across all rounds
+  _DV_ROUND = 'stat';
+  _DV_VERIFIED_PATIENT = null;
+  location.hash = '#pg-dispense-queue';
+}
+
+
+/* ════════════════════════════════════════════════════════
+   DISPENSE FLOW — Page 2: Patient Queue
+   ════════════════════════════════════════════════════════ */
+
+var _DQ_FILTER = 'all';
+
+function initDispenseQueue() {
+  if (location.hash.replace('#','') !== 'pg-dispense-queue') return;
+  seedMcData();
+  _DQ_FILTER = 'all';
+
+  // Reset filter UI
+  document.querySelectorAll('.dq-filter-chip').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.filter === 'all');
+  });
+
+  _renderDqHeader();
+  _renderDqList();
+}
+
+function _renderDqHeader() {
+  var labels = { morning:'รอบเช้า · 08:00', noon:'รอบกลางวัน · 12:00',
+                 evening:'รอบเย็น · 16:00', bedtime:'รอบก่อนนอน · 20:00',
+                 stat:'STAT / PRN — ยาด่วน' };
+  var nameEl = document.getElementById('dqRoundName');
+  var tagEl  = document.getElementById('dqRoundTag');
+  if (nameEl) nameEl.textContent = labels[_DV_ROUND] || 'รอบเวลา';
+  if (tagEl)  tagEl.textContent  = (_DV_ROUND === 'stat') ? 'ประเภทพิเศษ' : 'รอบเวลา';
+
+  // Progress count
+  var pts = _dqGetPatients();
+  var done = pts.filter(function(p) { return p.allDone; }).length;
+  var doneEl  = document.getElementById('dqDone');
+  var totalEl = document.getElementById('dqTotal');
+  if (doneEl)  doneEl.textContent  = done;
+  if (totalEl) totalEl.textContent = pts.length;
+}
+
+function _dqGetPatients() {
+  var orders;
+  if (_DV_ROUND === 'stat') {
+    orders = _wardOrders().filter(function(o) {
+      return o.status === 'PENDING' && _DA_HIGH_ALERT.indexOf(o.drugId) !== -1;
+    });
+  } else {
+    var th = { morning:'เช้า', noon:'กลางวัน', evening:'เย็น', bedtime:'ก่อนนอน' }[_DV_ROUND];
+    orders = _wardOrders().filter(function(o) { return o.rounds && o.rounds.indexOf(th) !== -1; });
+  }
+
+  var byPt = {};
+  orders.forEach(function(o) {
+    if (!byPt[o.patientId]) byPt[o.patientId] = [];
+    byPt[o.patientId].push(o);
+  });
+
+  var ptMap = {};
+  (MC_STATE.patients || []).forEach(function(p) { ptMap[p.id] = p; });
+  var drugMap = {};
+  DRUG_LIST.forEach(function(d) { drugMap[d.id] = d; });
+
+  return Object.keys(byPt).map(function(pid) {
+    var p     = ptMap[pid] || { id: pid, name: pid, bed: '—', ward: '—', allergies: [] };
+    var ords  = byPt[pid];
+    var done  = ords.filter(function(o) { return o.status === 'DONE'; }).length;
+    var hasHA = ords.some(function(o) { return _DA_HIGH_ALERT.indexOf(o.drugId) !== -1; });
+    return {
+      patient:  p,
+      orders:   ords,
+      total:    ords.length,
+      done:     done,
+      allDone:  done === ords.length,
+      partial:  done > 0 && done < ords.length,
+      hasHA:    hasHA,
+      hasAllergy: p.allergies && p.allergies.length > 0
+    };
+  }).sort(function(a, b) {
+    // Sort by bed
+    return (a.patient.bed || '').localeCompare(b.patient.bed || '');
+  });
+}
+
+function _renderDqList() {
+  var listEl = document.getElementById('dqList');
+  if (!listEl) return;
+
+  var pts = _dqGetPatients();
+  var search = (document.getElementById('dqSearch') || {}).value || '';
+  var sLow = search.toLowerCase().trim();
+
+  var filtered = pts.filter(function(item) {
+    var p = item.patient;
+    // Filter
+    if (_DQ_FILTER === 'pending' && item.allDone) return false;
+    if (_DQ_FILTER === 'done'    && !item.allDone) return false;
+    if (_DQ_FILTER === 'ha'      && !item.hasHA)   return false;
+    // Search
+    if (sLow) {
+      var hay = (p.name + ' ' + p.hn + ' ' + p.bed).toLowerCase();
+      if (hay.indexOf(sLow) === -1) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    listEl.innerHTML = '<div class="dq-empty">ไม่พบผู้ป่วยที่ตรงเงื่อนไข</div>';
+    return;
+  }
+
+  var svgAllergy = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  var svgArrow   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+
+  listEl.innerHTML = filtered.map(function(item) {
+    var p = item.patient;
+    var initials = p.name ? p.name.split(' ').slice(0,2).map(function(w) { return w.charAt(0); }).join('') : '?';
+    var rowCls = 'dq-pt-row' + (item.allDone ? ' done' : '') + (item.hasHA ? ' has-ha' : '');
+    var statusCls = item.allDone ? 'done' : (item.partial ? 'partial' : 'pending');
+    var statusLbl = item.allDone ? 'จ่ายครบ' : (item.partial ? 'จัดบางส่วน' : 'รอจ่าย');
+
+    var tagsHtml = '';
+    if (item.hasHA) tagsHtml += '<span class="dq-pt-tag dq-pt-tag-ha">⚠ HIGH ALERT</span>';
+    if (item.hasAllergy) tagsHtml += '<span class="dq-pt-tag dq-pt-tag-allergy">แพ้: ' + p.allergies.join(', ') + '</span>';
+
+    return '<button type="button" class="' + rowCls + '" onclick="dqSelectPatient(\'' + p.id + '\')">'
+      + '<div class="dq-pt-bed-tag">' + (p.bed || '—') + '</div>'
+      + '<div class="dq-pt-avatar">' + initials + '</div>'
+      + '<div class="dq-pt-info">'
+      +   '<div class="dq-pt-name">' + p.name
+      +     (item.hasAllergy ? ' <span class="dq-pt-allergy-icon">' + svgAllergy + '</span>' : '')
+      +   '</div>'
+      +   '<div class="dq-pt-meta">HN ' + p.hn + ' · ' + p.ward + ' · อายุ ' + (p.age || '—') + ' ปี</div>'
+      +   (tagsHtml ? '<div class="dq-pt-tags">' + tagsHtml + '</div>' : '')
+      + '</div>'
+      + '<div class="dq-pt-status">'
+      +   '<span class="dq-pt-status-pill ' + statusCls + '">' + statusLbl + '</span>'
+      +   '<span class="dq-pt-count">' + item.done + ' / ' + item.total + ' รายการ</span>'
+      + '</div>'
+      + '<div class="dq-pt-arrow">' + svgArrow + '</div>'
+      + '</button>';
+  }).join('');
+}
+
+function dqSetFilter(f) {
+  _DQ_FILTER = f;
+  document.querySelectorAll('.dq-filter-chip').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.filter === f);
+  });
+  _renderDqList();
+}
+
+function dqApplyFilter() {
+  _renderDqList();
+}
+
+function dqSelectPatient(pid) {
+  // Pre-select expected patient — Page 3 will require wristband scan to verify
+  _DV_EXPECTED_PATIENT = pid;
+  _DV_VERIFIED_PATIENT = null;
+  location.hash = '#pg-dispense-verify';
+}
+
+
+/* ════════════════════════════════════════════════════════
+   DISPENSE FLOW — Page 6: MAR Dashboard (Overview)
+   ════════════════════════════════════════════════════════ */
+
+function initDispenseDashboard() {
+  if (location.hash.replace('#','') !== 'pg-dispense-dashboard') return;
+  seedMcData();
+
+  // Date
+  var now = new Date();
+  var thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var dateStr = now.getDate() + ' ' + thMonths[now.getMonth()] + ' ' + (now.getFullYear() + 543);
+  var dateEl = document.getElementById('dmDate');
+  if (dateEl) dateEl.textContent = dateStr;
+
+  _renderDmStats();
+  _renderDmRoundTable();
+  _renderDmTimeline();
+  _renderDmActivity();
+  _renderDmIssues();
+}
+
+function _renderDmStats() {
+  var orders = MC_STATE.orders || [];
+  var pending = orders.filter(function(o) { return o.status === 'PENDING'; }).length;
+  var done    = orders.filter(function(o) { return o.status === 'DONE';    }).length;
+  var skipped = orders.filter(function(o) { return o.status === 'SKIPPED'; }).length;
+
+  // "Currently dispensing" = patients with at least one DONE + at least one PENDING
+  var byPt = {};
+  orders.forEach(function(o) {
+    if (!byPt[o.patientId]) byPt[o.patientId] = { done: 0, pend: 0 };
+    if (o.status === 'DONE')    byPt[o.patientId].done++;
+    if (o.status === 'PENDING') byPt[o.patientId].pend++;
+  });
+  var inProgress = Object.values(byPt).filter(function(x) { return x.done > 0 && x.pend > 0; }).length;
+
+  // Issues count from audit log MAR_SAVED entries (mock: count skipped)
+  var issues = skipped;
+
+  var setText = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+  setText('dmStatPending',  pending);
+  setText('dmStatProgress', inProgress);
+  setText('dmStatDone',     done);
+  setText('dmStatIssue',    issues);
+
+  // Hero sub
+  var subEl = document.getElementById('dmHeroSub');
+  if (subEl) {
+    var totalOrd = orders.length;
+    var pct = totalOrd > 0 ? Math.round(done / totalOrd * 100) : 0;
+    subEl.textContent = 'จ่ายแล้ว ' + done + ' / ' + totalOrd + ' รายการ (' + pct + '%) · ติดตามแบบ realtime';
+  }
+}
+
+function _renderDmRoundTable() {
+  var tableEl = document.getElementById('dmRoundTable');
+  if (!tableEl) return;
+
+  var rounds = [
+    { key:'morning', th:'เช้า' },
+    { key:'noon',    th:'กลางวัน' },
+    { key:'evening', th:'เย็น' },
+    { key:'bedtime', th:'ก่อนนอน' }
+  ];
+  var wards = ['Ward A', 'Ward B'];
+
+  // Build patient->ward map
+  var patWard = {};
+  (MC_STATE.patients || []).forEach(function(p) { patWard[p.id] = p.ward; });
+
+  // Compute per ward × round: { done, total }
+  var matrix = {};
+  wards.forEach(function(w) { matrix[w] = {}; rounds.forEach(function(r) { matrix[w][r.key] = { done: 0, total: 0 }; }); });
+
+  (MC_STATE.orders || []).forEach(function(o) {
+    var w = patWard[o.patientId];
+    if (!w) return;
+    if (!matrix[w]) return;
+    rounds.forEach(function(r) {
+      if (o.rounds && o.rounds.indexOf(r.th) !== -1) {
+        matrix[w][r.key].total++;
+        if (o.status === 'DONE') matrix[w][r.key].done++;
+      }
+    });
+  });
+
+  // Build header
+  var headerHtml = '<thead><tr><th>Ward</th>'
+    + rounds.map(function(r) { return '<th>รอบ' + r.th + '</th>'; }).join('')
+    + '<th>รวม</th></tr></thead>';
+
+  // Build rows
+  var grandDone = 0, grandTotal = 0;
+  var rowsHtml = wards.map(function(w) {
+    var rowDone = 0, rowTotal = 0;
+    var cells = rounds.map(function(r) {
+      var c = matrix[w][r.key];
+      rowDone += c.done; rowTotal += c.total;
+      var pct = c.total > 0 ? Math.round(c.done / c.total * 100) : 0;
+      var fracCls = c.total === 0 ? 'empty' : (c.done === c.total ? 'full' : (c.done > 0 ? 'partial' : ''));
+      return '<td><div class="dm-table-cell">'
+        + '<span class="dm-table-frac ' + fracCls + '">' + c.done + ' / ' + c.total + '</span>'
+        + (c.total > 0 ? '<div class="dm-table-bar"><div class="dm-table-bar-fill" style="width:' + pct + '%"></div></div>' : '')
+        + '</div></td>';
+    }).join('');
+    grandDone += rowDone; grandTotal += rowTotal;
+    var rowPct = rowTotal > 0 ? Math.round(rowDone / rowTotal * 100) : 0;
+    var fracCls = rowTotal === 0 ? 'empty' : (rowDone === rowTotal ? 'full' : (rowDone > 0 ? 'partial' : ''));
+    return '<tr><td>' + w + '</td>' + cells
+      + '<td><div class="dm-table-cell">'
+      +   '<span class="dm-table-frac ' + fracCls + '">' + rowDone + ' / ' + rowTotal + '</span>'
+      +   '<div class="dm-table-bar"><div class="dm-table-bar-fill" style="width:' + rowPct + '%"></div></div>'
+      + '</div></td></tr>';
+  }).join('');
+
+  // Grand total row
+  var grandCells = rounds.map(function(r) {
+    var sum = wards.reduce(function(s, w) { return { done: s.done + matrix[w][r.key].done, total: s.total + matrix[w][r.key].total }; }, { done: 0, total: 0 });
+    var pct = sum.total > 0 ? Math.round(sum.done / sum.total * 100) : 0;
+    var fracCls = sum.total === 0 ? 'empty' : (sum.done === sum.total ? 'full' : (sum.done > 0 ? 'partial' : ''));
+    return '<td><span class="dm-table-frac ' + fracCls + '">' + sum.done + ' / ' + sum.total + '</span></td>';
+  }).join('');
+  var grandPct = grandTotal > 0 ? Math.round(grandDone / grandTotal * 100) : 0;
+  var grandFracCls = grandDone === grandTotal && grandTotal > 0 ? 'full' : (grandDone > 0 ? 'partial' : 'empty');
+  rowsHtml += '<tr class="dm-table-total"><td>รวมทั้งหมด</td>' + grandCells
+    + '<td><span class="dm-table-frac ' + grandFracCls + '">' + grandDone + ' / ' + grandTotal + ' (' + grandPct + '%)</span></td></tr>';
+
+  tableEl.innerHTML = headerHtml + '<tbody>' + rowsHtml + '</tbody>';
+
+  var meta = document.getElementById('dmRoundCardMeta');
+  if (meta) meta.textContent = 'รวม ' + grandTotal + ' รายการ · จ่ายแล้ว ' + grandPct + '%';
+}
+
+function _renderDmTimeline() {
+  var tlEl = document.getElementById('dmTimeline');
+  if (!tlEl) return;
+
+  // Mock hourly counts — peaks at round times
+  var hours = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+  var roundHrs = [8, 12, 16, 20];
+  var nowHr = new Date().getHours();
+
+  // Build counts: peak at each round, ramp down
+  var counts = hours.map(function(h) {
+    if (h > nowHr) return 0; // future
+    // Distance to nearest past round
+    var minDist = Infinity;
+    roundHrs.forEach(function(r) { if (r <= nowHr && Math.abs(h - r) < minDist) minDist = Math.abs(h - r); });
+    if (minDist === 0) return 12 + (h % 3);  // round hour peak
+    if (minDist === 1) return 4  + (h % 3);
+    if (minDist === 2) return 1;
+    return 0;
+  });
+
+  var maxCount = Math.max(1, Math.max.apply(null, counts));
+  tlEl.innerHTML = hours.map(function(h, i) {
+    var c = counts[i];
+    var heightPct = (c / maxCount) * 100;
+    var isCurrent = h === nowHr;
+    var label = (h < 10 ? '0' : '') + h + ':00';
+    return '<div class="dm-tl-bar' + (isCurrent ? ' current' : '') + '">'
+      + (c > 0 ? '<span class="dm-tl-bar-num">' + c + '</span>' : '')
+      + '<div class="dm-tl-bar-track">'
+      +   '<div class="dm-tl-bar-fill" style="height:' + heightPct + '%"></div>'
+      + '</div>'
+      + '<div class="dm-tl-bar-label">' + label + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _renderDmActivity() {
+  var listEl = document.getElementById('dmActivityList');
+  if (!listEl) return;
+
+  var ptMap = {};
+  (MC_STATE.patients || []).forEach(function(p) { ptMap[p.id] = p; });
+  var drugMap = {};
+  DRUG_LIST.forEach(function(d) { drugMap[d.id] = d; });
+
+  // Generate mock activity from DONE orders + recent audit
+  var activities = [];
+
+  // Real audit log entries (MAR + dispense events)
+  (MC_STATE.auditLog || []).slice(-12).reverse().forEach(function(e) {
+    if (e.action === 'MAR_SAVED' || e.action === 'PATIENT_PACKED') {
+      var d = new Date(e.ts || Date.now());
+      activities.push({
+        time:  String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'),
+        type:  'given',
+        text:  '<b>' + (e.user || 'พยาบาล') + '</b> บันทึก MAR ของ <b>' + (e.patient || '—') + '</b>',
+        meta:  e.drugLabel || ''
+      });
+    }
+  });
+
+  // Mock activity from DONE orders (simulate timestamps stagger from morning)
+  var doneOrders = (MC_STATE.orders || []).filter(function(o) { return o.status === 'DONE'; }).slice(0, 8);
+  doneOrders.forEach(function(o, i) {
+    var p = ptMap[o.patientId] || { name: o.patientId, bed: '—' };
+    var d = drugMap[o.drugId]  || { name: o.drugId, dose: '' };
+    var hr = 8 + Math.floor(i / 3);
+    var mn = (i * 17) % 60;
+    activities.push({
+      time:  String(hr).padStart(2,'0') + ':' + String(mn).padStart(2,'0'),
+      type:  'given',
+      text:  '<b>' + p.name + '</b> รับยา <b>' + d.name + '</b> ' + (d.dose || '') + ' × ' + (o.dispensedQty || o.qty || 1),
+      meta:  'เตียง ' + p.bed + ' · ' + p.ward
+    });
+  });
+
+  // Sort by time desc
+  activities.sort(function(a, b) { return b.time.localeCompare(a.time); });
+  activities = activities.slice(0, 10);
+
+  if (!activities.length) {
+    listEl.innerHTML = '<div class="dm-empty-msg">ยังไม่มีกิจกรรมการจ่ายยาในวันนี้</div>';
+    return;
+  }
+
+  var icons = {
+    given:   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    refused: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    held:    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    alert:   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+  };
+
+  listEl.innerHTML = activities.map(function(a) {
+    return '<div class="dm-activity-row">'
+      + '<div class="dm-activity-time">' + a.time + '</div>'
+      + '<div class="dm-activity-icon ' + a.type + '">' + (icons[a.type] || icons.given) + '</div>'
+      + '<div>'
+      +   '<div class="dm-activity-text">' + a.text + '</div>'
+      +   (a.meta ? '<div class="dm-activity-meta">' + a.meta + '</div>' : '')
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _renderDmIssues() {
+  var listEl  = document.getElementById('dmIssueList');
+  var countEl = document.getElementById('dmIssueCount');
+  if (!listEl) return;
+
+  var ptMap = {};
+  (MC_STATE.patients || []).forEach(function(p) { ptMap[p.id] = p; });
+  var drugMap = {};
+  DRUG_LIST.forEach(function(d) { drugMap[d.id] = d; });
+
+  // Mock issues: SKIPPED orders + High Alert pending in late rounds
+  var issues = [];
+
+  // Skipped → "Refuse" or "Hold" (alternating for demo)
+  (MC_STATE.orders || []).filter(function(o) { return o.status === 'SKIPPED'; }).forEach(function(o, i) {
+    var p = ptMap[o.patientId] || { name: o.patientId, bed: '—' };
+    var d = drugMap[o.drugId]  || { name: o.drugId };
+    var isHold = i % 2 === 0;
+    issues.push({
+      tag:   isHold ? 'hold' : 'refuse',
+      tagLbl: isHold ? 'HOLD' : 'REFUSE',
+      line:  d.name + ' — ' + p.name,
+      meta:  'เตียง ' + p.bed + ' · ' + (isHold ? 'รอผลตรวจ' : 'ผู้ป่วยปฏิเสธ')
+    });
+  });
+
+  // High Alert pending in evening/bedtime → flag
+  (MC_STATE.orders || []).filter(function(o) {
+    return o.status === 'PENDING'
+      && _DA_HIGH_ALERT.indexOf(o.drugId) !== -1
+      && o.rounds && (o.rounds.indexOf('เย็น') !== -1 || o.rounds.indexOf('ก่อนนอน') !== -1);
+  }).forEach(function(o) {
+    var p = ptMap[o.patientId] || { name: o.patientId, bed: '—' };
+    var d = drugMap[o.drugId]  || { name: o.drugId };
+    issues.push({
+      tag:   'allergy',
+      tagLbl: '⚠ HIGH ALERT',
+      line:  d.name + ' — ' + p.name,
+      meta:  'เตียง ' + p.bed + ' · รอจ่าย รอบ' + (o.rounds[o.rounds.length - 1])
+    });
+  });
+
+  if (countEl) countEl.textContent = issues.length;
+  if (!issues.length) {
+    listEl.innerHTML = '<div class="dm-empty-msg">ไม่มีรายการที่ต้องตามผล ✓</div>';
+    return;
+  }
+  listEl.innerHTML = issues.slice(0, 10).map(function(it) {
+    return '<div class="dm-issue-row">'
+      + '<span class="dm-issue-tag ' + it.tag + '">' + it.tagLbl + '</span>'
+      + '<div class="dm-issue-info">'
+      +   '<div class="dm-issue-line">' + it.line + '</div>'
+      +   '<div class="dm-issue-meta">' + it.meta + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}

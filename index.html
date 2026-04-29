@@ -13,6 +13,16 @@
 
 <div id="app"></div>
 
+<!-- Cassette Info Modal (global, shown via openCassetteInfo) -->
+<div class="cass-info-overlay" id="cassInfoOverlay" hidden onclick="closeCassetteInfo(event)">
+  <div class="cass-info-modal" id="cassInfoModal" onclick="event.stopPropagation()">
+    <button type="button" class="cass-info-close" onclick="closeCassetteInfo()" aria-label="ปิด">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="cass-info-body" id="cassInfoBody"></div>
+  </div>
+</div>
+
 <button type="button" class="btn-reset-float" onclick="resetDemo()">
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
@@ -785,66 +795,36 @@
         </div>
 
         <div class="login-title">เข้าสู่ระบบ</div>
-        <div class="login-sub">เลือกวิธีการยืนยันตัวตนเพื่อเริ่มใช้งานรถเข็นยา</div>
+        <div class="login-sub">กรอกรหัสพนักงานและรหัสผ่านเพื่อเริ่มใช้งาน</div>
 
-        <!-- Auth method tabs -->
-        <div class="auth-tabs">
-          <button type="button" class="auth-tab active" data-method="password" onclick="switchAuthMethod('password')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"/>
-              <path d="M7 11V7a5 5 0 0110 0v4"/>
-            </svg>
-            <span>รหัสผ่าน</span>
-          </button>
-          <button type="button" class="auth-tab" data-method="card" onclick="switchAuthMethod('card')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="5" width="20" height="14" rx="2"/>
-              <line x1="2" y1="10" x2="22" y2="10"/>
-              <line x1="6" y1="15" x2="10" y2="15"/>
-            </svg>
-            <span>สแกนบัตร</span>
-          </button>
-          <button type="button" class="auth-tab" data-method="face" onclick="switchAuthMethod('face')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="9" r="3"/>
-              <path d="M12 14c-3.5 0-6 2-6 4.5V20h12v-1.5C18 16 15.5 14 12 14z"/>
-              <path d="M4 7V5a1 1 0 011-1h2M20 7V5a1 1 0 00-1-1h-2M4 17v2a1 1 0 001 1h2M20 17v2a1 1 0 01-1 1h-2"/>
-            </svg>
-            <span>สแกนใบหน้า</span>
-          </button>
-        </div>
+        <form onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label" for="username">รหัสพนักงาน</label>
+            <input class="form-input" type="text" id="username" placeholder="เช่น admin" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">รหัสผ่าน</label>
+            <div class="input-wrap">
+              <input class="form-input" type="password" id="password" placeholder="••••••••" />
+              <button type="button" class="btn-eye" onclick="togglePassword()">
+                <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="demo-creds">
+            <div class="demo-creds-title">ทดสอบระบบ (Password: 1234)</div>
+            <div class="demo-creds-chips">
+              <button type="button" class="demo-chip" onclick="fillDemoUser('admin')">admin = พยาบาล</button>
+              <button type="button" class="demo-chip" onclick="fillDemoUser('admin_2')">admin_2 = เภสัชกร</button>
+              <button type="button" class="demo-chip" onclick="fillDemoUser('admin_3')">admin_3 = หัวหน้าเวร</button>
+            </div>
+          </div>
+          <button type="submit" class="btn-login">เข้าสู่ระบบ</button>
+        </form>
 
-        <!-- Password panel -->
-        <div class="auth-panel" id="authPanelPassword">
-          <form onsubmit="handleLogin(event)">
-            <div class="form-group">
-              <label class="form-label" for="username">รหัสพนักงาน</label>
-              <input class="form-input" type="text" id="username" placeholder="เช่น admin" autocomplete="off" />
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="password">รหัสผ่าน</label>
-              <div class="input-wrap">
-                <input class="form-input" type="password" id="password" placeholder="••••••••" />
-                <button type="button" class="btn-eye" onclick="togglePassword()">
-                  <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="demo-creds">
-              <div class="demo-creds-title">ทดสอบระบบ (Password: 1234)</div>
-              <div class="demo-creds-chips">
-                <button type="button" class="demo-chip" onclick="fillDemoUser('admin')">admin = พยาบาล</button>
-                <button type="button" class="demo-chip" onclick="fillDemoUser('admin_2')">admin_2 = เภสัชกร</button>
-                <button type="button" class="demo-chip" onclick="fillDemoUser('admin_3')">admin_3 = หัวหน้าเวร</button>
-              </div>
-            </div>
-            <button type="submit" class="btn-login">เข้าสู่ระบบ</button>
-          </form>
-        </div>
-
-        <!-- Card scan panel -->
+        <!-- Hidden: card scan panel (ซ่อนไว้ก่อน) -->
         <div class="auth-panel" id="authPanelCard" hidden>
           <div class="scan-area scan-card">
             <div class="scan-icon-wrap">
@@ -866,7 +846,7 @@
           <button type="button" class="btn-login" onclick="simulateCardScan()">จำลองการสแกน</button>
         </div>
 
-        <!-- Face scan panel -->
+        <!-- Hidden: face scan panel (ซ่อนไว้ก่อน) -->
         <div class="auth-panel" id="authPanelFace" hidden>
           <div class="scan-area scan-face">
             <div class="face-frame">
@@ -896,7 +876,7 @@
     </div>
   </div>
 
-  <!-- Card scan confirm modal -->
+  <!-- Hidden: card scan confirm modal (ซ่อนไว้ก่อน) -->
   <div id="cardScanModal" class="csp-overlay" hidden>
     <div class="csp-modal">
       <div class="csp-header">
@@ -1133,6 +1113,7 @@
   <div class="mc-body">
     <div class="mc-back-row">
       <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-mode'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Session Setup</button>
+      <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg> หน้าหลัก</button>
     </div>
     <div class="mc-top">
       <div>
@@ -1167,10 +1148,16 @@
 
   <div class="mc-body mc-body-wide">
     <div class="mc-back-row" style="justify-content:space-between;align-items:center;">
-      <button type="button" class="mc-back-btn" onclick="exitAdmin()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-        ออกจากโหมด Admin
-      </button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button type="button" class="mc-back-btn" onclick="exitAdmin()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          ออกจากโหมด Admin
+        </button>
+        <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+          หน้าหลัก
+        </button>
+      </div>
       <button type="button" class="btn-footer-admin" id="adminSaveBtn" onclick="saveAdminConfig()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         บันทึก
@@ -1249,20 +1236,23 @@
     <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
   </div></nav>
 
-  <div class="mc-body mc-body-wide">
+  <div class="mc-body mc-body-mid">
     <div class="mc-back-row">
       <button type="button" class="mc-back-btn" onclick="location.hash='#pg-admin-carts'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> รายการรถเข็น</button>
+      <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg> หน้าหลัก</button>
     </div>
-    <div class="mc-top"><div>
-      <div class="mc-title">แก้ไขรถเข็น</div>
-      <div class="mc-sub">เปลี่ยนชื่อ ward และ template</div>
-    </div></div>
+    <div class="mc-top">
+      <div>
+        <div class="mc-title">แก้ไขรถเข็น</div>
+        <div class="mc-sub">เปลี่ยนชื่อ ward และ template</div>
+      </div>
+      <button type="button" class="mc-btn mc-btn-primary" style="padding:7px 20px;min-width:0;flex:none;" onclick="location.hash='#pg-admin-carts'">เสร็จสิ้น</button>
+    </div>
     <div id="cartEditRoot"></div>
   </div>
 
   <footer class="footer"><div class="footer-inner">
     <div class="footer-left"><span>Med Cart v3.2.1</span><span class="footer-sep">·</span><span>Admin Mode</span></div>
-    <button type="button" class="btn-reset" onclick="location.hash='#pg-admin-carts'">เสร็จสิ้น</button>
   </div></footer>
 </div>
 </template>
@@ -1280,9 +1270,10 @@
     <div class="nav-clock"><div class="clock-time" id="clock">--:--:--</div><div class="clock-date" id="dateTh"></div></div>
   </div></nav>
 
-  <div class="mc-body">
+  <div class="mc-body mc-body-mid">
     <div class="mc-back-row">
       <button type="button" class="mc-back-btn" onclick="location.hash='#pg-admin-carts'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Admin</button>
+      <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg> หน้าหลัก</button>
     </div>
     <div class="mc-top"><div>
       <div class="mc-title">แก้ไข Template</div>
@@ -1335,6 +1326,10 @@
       <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-mode'">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         ย้อนกลับ
+      </button>
+      <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
       </button>
       <div class="session-bar" id="sessionBar"></div>
     </div>
@@ -1402,6 +1397,10 @@
       <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-mode'">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         เลือกประเภท
+      </button>
+      <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
       </button>
       <div class="session-bar" id="sessionBar"></div>
     </div>
@@ -1479,6 +1478,7 @@
   <div class="mc-body">
     <div class="mc-back-row">
       <button type="button" class="mc-back-btn" onclick="location.hash='#pg-patient-queue'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> รายชื่อผู้ป่วย</button>
+      <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg> หน้าหลัก</button>
       <div class="session-bar" id="sessionBar"></div>
     </div>
 
@@ -1559,6 +1559,10 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         เลือกประเภท
       </button>
+      <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
+      </button>
       <div class="session-bar" id="sessionBar"></div>
     </div>
 
@@ -1621,6 +1625,7 @@
   <div class="mc-body">
     <div class="mc-back-row">
       <button type="button" class="mc-back-btn" onclick="location.hash='#pg-drug-queue'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> รายการยา</button>
+      <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg> หน้าหลัก</button>
       <div class="session-bar" id="sessionBar"></div>
     </div>
 
@@ -1859,7 +1864,11 @@
     <div class="mc-back-row">
       <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-meds'">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-        Dashboard
+        ย้อนกลับ
+      </button>
+      <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
       </button>
     </div>
     <div class="mc-top">
@@ -1959,7 +1968,8 @@
 
   <div class="mc-body">
     <div class="mc-back-row">
-      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-meds'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Dashboard</button>
+      <button type="button" class="mc-back-btn" onclick="location.hash='#pg-load-meds'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> ย้อนกลับ</button>
+      <button type="button" class="mc-back-btn mc-home-btn" onclick="location.hash='#pg-dashboard'"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg> หน้าหลัก</button>
     </div>
     <div class="mc-top">
       <div>
@@ -2048,26 +2058,14 @@
         </div>
         <div class="dash-section-label">ทางลัด</div>
         <div class="dash-actions-grid" id="dashActions"></div>
-        <div id="dashFocus"></div>
       </aside>
 
       <!-- Main content -->
       <div class="dash-main-col">
-        <!-- KPI stats row — same width as panels below -->
+        <!-- KPI stats row -->
         <div class="dash-stats-grid" id="dashStatsGrid"></div>
+
         <div class="inv-section" id="dashInventory"></div>
-        <div class="dash-panel" hidden>
-          <div class="dash-panel-header">
-            <div class="dash-panel-title">
-              <div class="dash-panel-icon dash-panel-icon-teal">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              </div>
-              รอบยาวันนี้
-            </div>
-            <span class="dash-link-info" id="dashRoundsInfo">—</span>
-          </div>
-          <div class="dash-rounds" id="dashRounds"></div>
-        </div>
       </div>
 
     </div>
@@ -2134,10 +2132,16 @@
 
     <div class="ptp-body">
 
-      <button class="hdr-back" onclick="location.hash='#pg-dashboard'">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-        Dashboard
-      </button>
+      <div class="hdr-nav-bar">
+        <button class="hdr-back" onclick="history.back()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          ย้อนกลับ
+        </button>
+        <button class="hdr-back hdr-home" onclick="location.hash='#pg-dashboard'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+          หน้าหลัก
+        </button>
+      </div>
 
       <!-- ── Hero banner ── -->
       <div class="dash-hero ptp-hero">
@@ -2197,8 +2201,8 @@
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
             </div>
             <div class="ptp-mode-text">
-              <div class="ptp-mode-name">จัดยาตามรายการยา</div>
-              <div class="ptp-mode-desc">เตรียมยาโดยยึดรายการยาเป็นหลัก หยิบทีละชนิดแล้วกระจายเข้า Cassette ของแต่ละราย</div>
+              <div class="ptp-mode-name">จัดยาสามัญ</div>
+              <div class="ptp-mode-desc">จัดยาสำรองที่เก็บใน Cassette ของรถ พร้อมเบิกใช้ตามความจำเป็น ไม่ผูกกับรอบเวลา</div>
             </div>
             <div class="ptp-mode-stats">
               <span class="ptp-mode-chip blue" id="ptpChipDrugs">— ชนิดยา</span>
@@ -2361,10 +2365,16 @@
 
   <div class="ppw-body">
 
-    <button class="hdr-back" onclick="location.hash='#pg-prep-type'">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-      ย้อนกลับ
-    </button>
+    <div class="hdr-nav-bar">
+      <button class="hdr-back" onclick="location.hash='#pg-prep-type'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        ย้อนกลับ
+      </button>
+      <button class="hdr-back hdr-home" onclick="location.hash='#pg-dashboard'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
+      </button>
+    </div>
 
     <div class="dash-hero ppw-hero">
       <div class="hero-left">
@@ -2416,9 +2426,1537 @@
       </button>
     </div>
   </footer>
+
 </div>
 </template>
 
+
+<template id="pg-prep-drawer">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">เลือกลิ้นชักและช่องยา</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="ppd-body">
+
+    <div class="hdr-nav-bar">
+      <button class="hdr-back" onclick="location.hash='#pg-prep-work'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        ย้อนกลับ
+      </button>
+      <button class="hdr-back hdr-home" onclick="location.hash='#pg-dashboard'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
+      </button>
+    </div>
+
+    <!-- ═══ Hero: teal gradient with patient info ═══ -->
+    <div class="dash-hero ppd-hero">
+      <div class="hero-left">
+        <div class="hero-tag-row">
+          <div id="ppdBadge" class="hero-tag">
+            <div class="hero-tag-dot"></div>
+            Patient-based
+          </div>
+        </div>
+        <div class="hero-greet" id="ppdName">—</div>
+        <div class="hero-sub" id="ppdMeta">—</div>
+        <div class="hero-status" id="ppdAllergyRow" style="display:none;">
+          <span class="hero-badge" style="background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.3);color:#fca5a5;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Drug Allergy: <span id="ppdAllergyText">—</span>
+          </span>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="ptp-hero-stats">
+          <div class="ptp-hero-stat">
+            <div class="ptp-hero-num" id="ppdStatOrders">—</div>
+            <div class="ptp-hero-lbl">รายการยา</div>
+          </div>
+          <div class="ptp-hero-divider"></div>
+          <div class="ptp-hero-stat">
+            <div class="ptp-hero-num" id="ppdStatDrawers">—</div>
+            <div class="ptp-hero-lbl">ลิ้นชักที่ต้องการ</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Step progress ═══ -->
+    <div class="ppd-steps">
+      <div class="ppd-step active" id="ppdStep1">
+        <div class="ppd-step-dot">1</div>
+        <div class="ppd-step-lbl">ลิ้นชัก</div>
+      </div>
+      <div class="ppd-step-connector">
+        <div class="ppd-step-fill" id="ppdStepFill"></div>
+      </div>
+      <div class="ppd-step" id="ppdStep2">
+        <div class="ppd-step-dot">2</div>
+        <div class="ppd-step-lbl">Cassette</div>
+      </div>
+    </div>
+
+    <!-- ═══ 2-column main layout ═══ -->
+    <div class="ppd-main-row">
+
+      <!-- LEFT: Drawer + Cassette stacked -->
+      <div class="ppd-left-col">
+
+        <!-- Step 1: Drawer panel -->
+        <div class="dash-panel">
+          <div class="dash-panel-header">
+            <div class="dash-panel-title">
+              <div class="dash-panel-icon dash-panel-icon-blue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/></svg>
+              </div>
+              ① เลือกลิ้นชัก (Drawer)
+            </div>
+            <span class="dash-link-info" id="ppdHwStatus">เลือก 1 ลิ้นชัก</span>
+          </div>
+          <div class="ppd-drawer-row" id="ppdDrawerGrid"><!-- JS --></div>
+        </div>
+
+        <!-- Step 2: Cassette panel -->
+        <div class="dash-panel" id="ppdCassArea">
+          <div class="dash-panel-header">
+            <div class="dash-panel-title">
+              <div class="dash-panel-icon dash-panel-icon-teal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              </div>
+              ② เลือก Cassette
+            </div>
+            <span class="dash-link-info ppd-cass-status-info" id="ppdCassStatusInfo" style="background:var(--bg);color:var(--text-3);">เลือกลิ้นชักก่อน</span>
+          </div>
+          <!-- Lock notice (shown before drawer selection) -->
+          <div id="ppdCassLock" class="ptp-lock-notice">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            เลือกลิ้นชักข้างบนก่อน จึงจะเลือก Cassette ได้
+          </div>
+          <!-- Cassette grid (JS fills after drawer select) -->
+          <div class="ppd-cass-grid" id="ppdCassetteArea" style="display:none;"><!-- JS --></div>
+          <!-- Selection summary -->
+          <div id="ppdSelSummary" class="ppd-sel-summary" style="display:none;">
+            <div class="ppd-sel-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div id="ppdSelText" class="ppd-sel-text">—</div>
+              <div class="ppd-sel-sub">พร้อมเริ่มจัดยาผู้ป่วยรายนี้</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Drug list panel -->
+      <div class="dash-panel ppd-drugs-panel">
+        <div class="dash-panel-header">
+          <div class="dash-panel-title">
+            <div class="dash-panel-icon dash-panel-icon-teal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="4"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+            </div>
+            <span id="ppdDrugCountLabel">รายการยา</span>
+          </div>
+          <span class="ptp-mode-chip teal" id="ppdDrugRound">รอบเช้า</span>
+        </div>
+        <div id="ppdDrugList" class="ppd-drugs-scroll"><!-- JS --></div>
+      </div>
+
+    </div>
+
+    <!-- ═══ Confirm bar (sticky) ═══ -->
+    <div class="ptp-confirm-bar">
+      <div>
+        <div class="ptp-confirm-label">สรุปการเลือก</div>
+        <div class="ptp-confirm-summary" id="ppdConfirmSummary">เลือกลิ้นชักและ Cassette</div>
+      </div>
+      <button class="ptp-confirm-btn" id="ppdStartBtn" disabled onclick="confirmPrepDrawer()">
+        เริ่มจัดยาผู้ป่วยรายนี้
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Med Cart v3.2.1</span>
+        <span class="footer-sep">·</span>
+        <span data-hw-id>MC-A-001</span>
+        <span class="footer-sep">·</span>
+        <div class="footer-batt">
+          <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+          <span>85%</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </footer>
+
+</div>
+</template>
+
+<!-- ═══════════════════════════════════════════════════════
+     PG-SCAN-DRUG — แสกนยาเข้า Cassette
+════════════════════════════════════════════════════════ -->
+<template id="pg-scan-drug">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub" id="scanNavSub">แสกนยาเข้า Cassette</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="scan-body">
+
+    <div class="hdr-nav-bar">
+      <button class="hdr-back" onclick="location.hash='#pg-prep-drawer'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        ย้อนกลับ
+      </button>
+      <button class="hdr-back hdr-home" onclick="location.hash='#pg-dashboard'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
+      </button>
+    </div>
+
+    <!-- Current drug being scanned -->
+    <div class="scan-current-card">
+      <div class="scan-current-top">
+        <div class="scan-drug-icon" id="scanDrugIcon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>
+        </div>
+        <div class="scan-current-info">
+          <div class="scan-drug-name" id="scanDrugName">—</div>
+          <div class="scan-drug-dose" id="scanDrugDose">—</div>
+          <div class="scan-location-row">
+            <span class="scan-loc-chip">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="10" y1="10" x2="10" y2="20"/></svg>
+              <span id="scanLocDrawer">ลิ้นชัก —</span>
+            </span>
+            <span class="scan-loc-arrow">→</span>
+            <span class="scan-loc-chip scan-loc-cassette">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3"/></svg>
+              <span id="scanLocCassette">Cassette —</span>
+            </span>
+          </div>
+        </div>
+        <div class="scan-progress-badge" id="scanProgressBadge">1 / 1</div>
+      </div>
+    </div>
+
+    <!-- Patient distribution (medication mode only) -->
+    <div class="scan-patient-panel" id="scanPatientPanel" style="display:none;"></div>
+
+    <!-- Scan area -->
+    <div class="scan-area" id="scanArea" onclick="simulateScan()">
+      <div class="scan-frame">
+        <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
+        <div class="scan-corner bl"></div><div class="scan-corner br"></div>
+        <div class="scan-line" id="scanLine"></div>
+        <div class="scan-barcode-icon" id="scanBarcodeIcon">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="2" height="14"/><rect x="6" y="5" width="1" height="14"/><rect x="9" y="5" width="3" height="14"/><rect x="14" y="5" width="1" height="14"/><rect x="17" y="5" width="2" height="14"/><rect x="21" y="5" width="1" height="14"/></svg>
+        </div>
+        <div class="scan-success-icon" id="scanSuccessIcon" hidden>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>
+        </div>
+      </div>
+      <div class="scan-hint" id="scanHint">แตะเพื่อแสกนบาร์โค้ดยา</div>
+    </div>
+
+    <!-- Success card (shown when all items scanned) -->
+    <div class="scan-success-card" id="scanSuccessCard" hidden>
+      <div class="scan-success-badge">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>
+      </div>
+      <div class="scan-success-title">จัดยาสำเร็จ</div>
+      <div class="scan-success-sub" id="scanSuccessSub">—</div>
+      <div class="scan-success-actions">
+        <button class="scan-success-btn scan-success-btn-secondary" onclick="finishScanGoDashboard()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          ไป Dashboard
+        </button>
+        <button class="scan-success-btn scan-success-btn-primary" onclick="finishScanContinue()">
+          จัดยาต่อ
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Queue รายการที่เหลือ -->
+    <div class="scan-queue" id="scanQueue"></div>
+
+    <!-- Confirm bar (sticky, inside body so it matches content width) -->
+    <div class="ptp-confirm-bar" id="scanConfirmBar">
+      <div>
+        <div class="ptp-confirm-label">ความคืบหน้า</div>
+        <div class="ptp-confirm-summary" id="scanStatus">รอแสกนบาร์โค้ด</div>
+      </div>
+      <button class="ptp-confirm-btn" id="scanConfirmBtn" disabled onclick="confirmScan()">
+        เสร็จสิ้น — ยืนยันทั้งหมด
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Med Cart v3.2.1</span>
+        <span class="footer-sep">·</span>
+        <span data-hw-id>MC-A-001</span>
+        <span class="footer-sep">·</span>
+        <div class="footer-batt">
+          <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+          <span>85%</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </footer>
+
+</div>
+</template>
+
+<!-- ════════════════════════════════════════════════════════
+     DISPENSE FLOW — Page 6: MAR Dashboard (Overview)
+     ════════════════════════════════════════════════════════ -->
+<template id="pg-dispense-dashboard">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">MAR · ภาพรวมการจ่ายยา</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dm-body">
+
+    <div class="hdr-nav-bar">
+      <button class="hdr-back" onclick="history.back()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        ย้อนกลับ
+      </button>
+      <button class="hdr-back hdr-home" onclick="location.hash='#pg-dashboard'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
+      </button>
+    </div>
+
+    <!-- Hero -->
+    <div class="dm-hero">
+      <div class="dm-hero-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="3" y2="12"/><path d="M3 3v18h18"/><polyline points="7 14 11 10 15 14 21 8"/></svg>
+      </div>
+      <div class="dm-hero-text">
+        <div class="dm-hero-tag">MEDICATION ADMINISTRATION RECORD</div>
+        <div class="dm-hero-title">ภาพรวมการจ่ายยา · <span id="dmDate">วันนี้</span></div>
+        <div class="dm-hero-sub" id="dmHeroSub">ติดตามสถานะการจ่ายยาของทุก ward</div>
+      </div>
+      <div class="dm-hero-actions">
+        <button type="button" class="dm-hero-btn" onclick="location.hash='#pg-dispense-rounds'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          เริ่มจ่ายยา
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 stat cards -->
+    <div class="dm-stats">
+      <div class="dm-stat dm-stat-pending">
+        <div class="dm-stat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="dm-stat-num" id="dmStatPending">0</div>
+        <div class="dm-stat-lbl">รอจ่าย</div>
+        <div class="dm-stat-sub" id="dmStatPendingSub">รายการยา</div>
+      </div>
+      <div class="dm-stat dm-stat-progress">
+        <div class="dm-stat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="dm-stat-num" id="dmStatProgress">0</div>
+        <div class="dm-stat-lbl">กำลังจ่าย</div>
+        <div class="dm-stat-sub" id="dmStatProgressSub">ผู้ป่วย</div>
+      </div>
+      <div class="dm-stat dm-stat-done">
+        <div class="dm-stat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="dm-stat-num" id="dmStatDone">0</div>
+        <div class="dm-stat-lbl">จ่ายแล้ว</div>
+        <div class="dm-stat-sub" id="dmStatDoneSub">รายการ</div>
+      </div>
+      <div class="dm-stat dm-stat-issue">
+        <div class="dm-stat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="dm-stat-num" id="dmStatIssue">0</div>
+        <div class="dm-stat-lbl">มีปัญหา</div>
+        <div class="dm-stat-sub" id="dmStatIssueSub">Refuse + Hold</div>
+      </div>
+    </div>
+
+    <!-- Ward × Round table -->
+    <div class="dm-card">
+      <div class="dm-card-head">
+        <div class="dm-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+          ความคืบหน้าตาม Ward × รอบเวลา
+        </div>
+        <div class="dm-card-meta" id="dmRoundCardMeta">รวม — รายการ</div>
+      </div>
+      <div class="dm-table-wrap">
+        <table class="dm-table" id="dmRoundTable"></table>
+      </div>
+    </div>
+
+    <!-- Timeline graph -->
+    <div class="dm-card">
+      <div class="dm-card-head">
+        <div class="dm-card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+          Timeline การจ่ายยาวันนี้
+        </div>
+        <div class="dm-card-meta">หน่วย: รายการ/ชั่วโมง</div>
+      </div>
+      <div class="dm-timeline" id="dmTimeline"></div>
+    </div>
+
+    <!-- 2-column: Recent activity + Issues -->
+    <div class="dm-grid-2col">
+      <!-- Recent activity -->
+      <div class="dm-card">
+        <div class="dm-card-head">
+          <div class="dm-card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            กิจกรรมล่าสุด
+          </div>
+          <span class="dm-live-dot">● Live</span>
+        </div>
+        <div class="dm-activity-list" id="dmActivityList"></div>
+      </div>
+
+      <!-- Outstanding issues -->
+      <div class="dm-card">
+        <div class="dm-card-head">
+          <div class="dm-card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            รายการที่ต้องตามผล
+          </div>
+          <span class="dm-issue-count" id="dmIssueCount">0</span>
+        </div>
+        <div class="dm-issue-list" id="dmIssueList"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Med Cart v3.2.1</span>
+        <span class="footer-sep">·</span>
+        <span data-hw-id>MC-A-001</span>
+        <span class="footer-sep">·</span>
+        <div class="footer-batt">
+          <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+          <span>85%</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </footer>
+
+</div>
+</template>
+
+<!-- ════════════════════════════════════════════════════════
+     DISPENSE FLOW — Page 1: Round Selection
+     ════════════════════════════════════════════════════════ -->
+<template id="pg-dispense-rounds">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">จ่ายยา · เลือกรอบเวลา</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dr-body">
+
+    <div class="hdr-nav-bar">
+      <button class="hdr-back" onclick="history.back()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        ย้อนกลับ
+      </button>
+      <button class="hdr-back hdr-home" onclick="location.hash='#pg-dashboard'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
+      </button>
+    </div>
+
+    <!-- Hero summary -->
+    <div class="dr-hero">
+      <div class="dr-hero-left">
+        <div class="dr-hero-tag">วันนี้ · <span id="drDate">—</span></div>
+        <div class="dr-hero-title">เลือกรอบเวลาที่ต้องการจ่ายยา</div>
+        <div class="dr-hero-sub" id="drHeroSub">ผู้ป่วยใน <span data-ward-name>Ward 3A</span> ทั้งหมด — รายการ</div>
+      </div>
+      <div class="dr-hero-right">
+        <div class="dr-hero-stat-block">
+          <div class="dr-hero-stat-num" id="drStatPatients">0</div>
+          <div class="dr-hero-stat-lbl">ผู้ป่วย</div>
+        </div>
+        <div class="dr-hero-stat-block">
+          <div class="dr-hero-stat-num" id="drStatOrders">0</div>
+          <div class="dr-hero-stat-lbl">รายการยาวันนี้</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 round cards grid -->
+    <div class="dr-rounds-grid">
+      <button type="button" class="dr-round-card" data-round="morning" onclick="drSelectRound('morning')">
+        <div class="dr-round-current" id="drCurMorning" hidden>● รอบปัจจุบัน</div>
+        <div class="dr-round-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+        </div>
+        <div class="dr-round-name">รอบเช้า</div>
+        <div class="dr-round-time">08:00</div>
+        <div class="dr-round-stats">
+          <div class="dr-round-stat">
+            <span class="dr-round-stat-num" id="drMorningPatients">0</span>
+            <span class="dr-round-stat-lbl">ผู้ป่วย</span>
+          </div>
+          <div class="dr-round-stat">
+            <span class="dr-round-stat-num" id="drMorningOrders">0</span>
+            <span class="dr-round-stat-lbl">รายการ</span>
+          </div>
+        </div>
+        <div class="dr-round-progress" id="drMorningProgress">
+          <div class="dr-progress-track"><div class="dr-progress-fill" id="drMorningFill"></div></div>
+          <div class="dr-progress-text"><span id="drMorningDone">0</span> / <span id="drMorningTotal">0</span></div>
+        </div>
+      </button>
+
+      <button type="button" class="dr-round-card" data-round="noon" onclick="drSelectRound('noon')">
+        <div class="dr-round-current" id="drCurNoon" hidden>● รอบปัจจุบัน</div>
+        <div class="dr-round-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="3" x2="12" y2="6"/><line x1="3" y1="12" x2="6" y2="12"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="18" y1="12" x2="21" y2="12"/></svg>
+        </div>
+        <div class="dr-round-name">รอบกลางวัน</div>
+        <div class="dr-round-time">12:00</div>
+        <div class="dr-round-stats">
+          <div class="dr-round-stat">
+            <span class="dr-round-stat-num" id="drNoonPatients">0</span>
+            <span class="dr-round-stat-lbl">ผู้ป่วย</span>
+          </div>
+          <div class="dr-round-stat">
+            <span class="dr-round-stat-num" id="drNoonOrders">0</span>
+            <span class="dr-round-stat-lbl">รายการ</span>
+          </div>
+        </div>
+        <div class="dr-round-progress" id="drNoonProgress">
+          <div class="dr-progress-track"><div class="dr-progress-fill" id="drNoonFill"></div></div>
+          <div class="dr-progress-text"><span id="drNoonDone">0</span> / <span id="drNoonTotal">0</span></div>
+        </div>
+      </button>
+
+      <button type="button" class="dr-round-card" data-round="evening" onclick="drSelectRound('evening')">
+        <div class="dr-round-current" id="drCurEvening" hidden>● รอบปัจจุบัน</div>
+        <div class="dr-round-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="M4.93 10.93l1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="M19.07 10.93l-1.41 1.41"/><path d="M22 22H2"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+        </div>
+        <div class="dr-round-name">รอบเย็น</div>
+        <div class="dr-round-time">16:00</div>
+        <div class="dr-round-stats">
+          <div class="dr-round-stat">
+            <span class="dr-round-stat-num" id="drEveningPatients">0</span>
+            <span class="dr-round-stat-lbl">ผู้ป่วย</span>
+          </div>
+          <div class="dr-round-stat">
+            <span class="dr-round-stat-num" id="drEveningOrders">0</span>
+            <span class="dr-round-stat-lbl">รายการ</span>
+          </div>
+        </div>
+        <div class="dr-round-progress" id="drEveningProgress">
+          <div class="dr-progress-track"><div class="dr-progress-fill" id="drEveningFill"></div></div>
+          <div class="dr-progress-text"><span id="drEveningDone">0</span> / <span id="drEveningTotal">0</span></div>
+        </div>
+      </button>
+
+      <button type="button" class="dr-round-card" data-round="bedtime" onclick="drSelectRound('bedtime')">
+        <div class="dr-round-current" id="drCurBedtime" hidden>● รอบปัจจุบัน</div>
+        <div class="dr-round-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </div>
+        <div class="dr-round-name">ก่อนนอน</div>
+        <div class="dr-round-time">20:00</div>
+        <div class="dr-round-stats">
+          <div class="dr-round-stat">
+            <span class="dr-round-stat-num" id="drBedtimePatients">0</span>
+            <span class="dr-round-stat-lbl">ผู้ป่วย</span>
+          </div>
+          <div class="dr-round-stat">
+            <span class="dr-round-stat-num" id="drBedtimeOrders">0</span>
+            <span class="dr-round-stat-lbl">รายการ</span>
+          </div>
+        </div>
+        <div class="dr-round-progress" id="drBedtimeProgress">
+          <div class="dr-progress-track"><div class="dr-progress-fill" id="drBedtimeFill"></div></div>
+          <div class="dr-progress-text"><span id="drBedtimeDone">0</span> / <span id="drBedtimeTotal">0</span></div>
+        </div>
+      </button>
+    </div>
+
+    <!-- STAT/PRN card -->
+    <button type="button" class="dr-stat-card" id="drStatCard" onclick="drSelectStat()">
+      <div class="dr-stat-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div class="dr-stat-info">
+        <div class="dr-stat-title">STAT / PRN — ยาด่วน / ตามอาการ</div>
+        <div class="dr-stat-sub" id="drStatSub">ไม่มีรายการยาด่วน</div>
+      </div>
+      <div class="dr-stat-badge" id="drStatBadge" hidden><span id="drStatCount">0</span> รายการ</div>
+      <svg class="dr-stat-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </button>
+
+    <!-- Status bar (4 stats) -->
+    <div class="dr-status-bar">
+      <div class="dr-status-item">
+        <div class="dr-status-num" id="drStatusPending">0</div>
+        <div class="dr-status-lbl">รอจ่าย</div>
+      </div>
+      <div class="dr-status-item">
+        <div class="dr-status-num dr-status-num-green" id="drStatusGiven">0</div>
+        <div class="dr-status-lbl">จ่ายแล้ว</div>
+      </div>
+      <div class="dr-status-item">
+        <div class="dr-status-num dr-status-num-orange" id="drStatusRefuse">0</div>
+        <div class="dr-status-lbl">Refuse</div>
+      </div>
+      <div class="dr-status-item">
+        <div class="dr-status-num dr-status-num-blue" id="drStatusLate">0</div>
+        <div class="dr-status-lbl">Hold/Late</div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Med Cart v3.2.1</span>
+        <span class="footer-sep">·</span>
+        <span data-hw-id>MC-A-001</span>
+        <span class="footer-sep">·</span>
+        <div class="footer-batt">
+          <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+          <span>85%</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </footer>
+
+</div>
+</template>
+
+<!-- ════════════════════════════════════════════════════════
+     DISPENSE FLOW — Page 2: Patient Queue
+     ════════════════════════════════════════════════════════ -->
+<template id="pg-dispense-queue">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">จ่ายยา · คิวผู้ป่วย</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dq-body">
+
+    <div class="hdr-nav-bar">
+      <button class="hdr-back" onclick="location.hash='#pg-dispense-rounds'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        ย้อนกลับ
+      </button>
+      <button class="hdr-back hdr-home" onclick="location.hash='#pg-dashboard'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
+      </button>
+    </div>
+
+    <!-- Round header -->
+    <div class="dq-round-strip">
+      <div class="dq-round-info">
+        <div class="dq-round-tag" id="dqRoundTag">รอบเวลา</div>
+        <div class="dq-round-name" id="dqRoundName">รอบเช้า · 08:00</div>
+      </div>
+      <div class="dq-round-progress">
+        <div class="dq-progress-num"><span id="dqDone">0</span> / <span id="dqTotal">0</span></div>
+        <div class="dq-progress-lbl">ผู้ป่วยจ่ายแล้ว</div>
+      </div>
+    </div>
+
+    <!-- Search + filter -->
+    <div class="dq-toolbar">
+      <div class="dq-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="dqSearch" placeholder="ค้นหาด้วยชื่อ / HN / เตียง" oninput="dqApplyFilter()" />
+      </div>
+      <div class="dq-filters">
+        <button type="button" class="dq-filter-chip active" data-filter="all" onclick="dqSetFilter('all')">ทั้งหมด</button>
+        <button type="button" class="dq-filter-chip" data-filter="pending" onclick="dqSetFilter('pending')">รอจ่าย</button>
+        <button type="button" class="dq-filter-chip" data-filter="done" onclick="dqSetFilter('done')">จ่ายแล้ว</button>
+        <button type="button" class="dq-filter-chip" data-filter="ha" onclick="dqSetFilter('ha')">⚠ HIGH ALERT</button>
+      </div>
+    </div>
+
+    <!-- Patient list -->
+    <div class="dq-list" id="dqList"></div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Med Cart v3.2.1</span>
+        <span class="footer-sep">·</span>
+        <span data-hw-id>MC-A-001</span>
+        <span class="footer-sep">·</span>
+        <div class="footer-batt">
+          <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+          <span>85%</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </footer>
+
+</div>
+</template>
+
+<!-- ════════════════════════════════════════════════════════
+     DISPENSE FLOW — Page 3: Patient Verification (5 Rights)
+     ════════════════════════════════════════════════════════ -->
+<template id="pg-dispense-verify">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">จ่ายยา · ยืนยันตัวผู้ป่วย</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dv-body">
+
+    <div class="hdr-nav-bar">
+      <button class="hdr-back" onclick="history.back()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        ย้อนกลับ
+      </button>
+      <button class="hdr-back hdr-home" onclick="location.hash='#pg-dashboard'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
+      </button>
+    </div>
+
+    <!-- Round indicator strip -->
+    <div class="dv-round-strip">
+      <div class="dv-round-info">
+        <div class="dv-round-tag">รอบเวลาปัจจุบัน</div>
+        <div class="dv-round-name" id="dvRoundName">รอบเช้า · 08:00</div>
+      </div>
+      <div class="dv-round-progress">
+        <div class="dv-progress-num"><span id="dvProgressDone">0</span> / <span id="dvProgressTotal">5</span></div>
+        <div class="dv-progress-lbl">ผู้ป่วยที่จ่ายแล้ว</div>
+      </div>
+    </div>
+
+    <!-- ═════ Step 1: Wristband scan ═════ -->
+    <div class="dv-scan-section" id="dvScanSection">
+      <div class="dv-scan-step-tag">ขั้นที่ 1 จาก 5 · Right Patient</div>
+      <div class="dv-scan-title">ยืนยันตัวผู้ป่วย</div>
+      <div class="dv-scan-sub">สแกน Wristband ก่อนให้ยา เพื่อยืนยันว่าเป็นผู้ป่วยที่ถูกต้อง</div>
+
+      <div class="dv-scan-area" id="dvScanArea" onclick="simulateWristbandScan()">
+        <div class="dv-scan-frame">
+          <div class="dv-scan-corner tl"></div>
+          <div class="dv-scan-corner tr"></div>
+          <div class="dv-scan-corner bl"></div>
+          <div class="dv-scan-corner br"></div>
+          <div class="dv-scan-line" id="dvScanLine"></div>
+          <div class="dv-scan-icon-big" id="dvScanIcon">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="6" width="20" height="12" rx="2"/>
+              <line x1="6" y1="10" x2="6" y2="14"/>
+              <line x1="9" y1="10" x2="9" y2="14"/>
+              <line x1="12" y1="10" x2="12" y2="14"/>
+              <line x1="15" y1="10" x2="15" y2="14"/>
+              <line x1="18" y1="10" x2="18" y2="14"/>
+            </svg>
+          </div>
+        </div>
+        <div class="dv-scan-hint">แตะเพื่อจำลองการสแกน Wristband</div>
+        <input type="text" class="dv-scan-input" id="dvScanInput" autofocus aria-label="Barcode input" />
+      </div>
+
+      <button type="button" class="dv-manual-link" onclick="manualEntryPatient()">
+        หรือกรอก HN ด้วยตนเอง →
+      </button>
+    </div>
+
+    <!-- ═════ Step 2: Patient verified card ═════ -->
+    <div class="dv-patient-section" id="dvPatientSection" hidden>
+
+      <!-- Verified status pill -->
+      <div class="dv-verified-tag">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Wristband ยืนยันสำเร็จ — Right Patient ✓
+      </div>
+
+      <!-- Big patient card -->
+      <div class="dv-patient-card">
+        <div class="dv-patient-top">
+          <div class="dv-patient-avatar" id="dvAvatar">—</div>
+          <div class="dv-patient-info">
+            <div class="dv-patient-name" id="dvName">—</div>
+            <div class="dv-patient-hn" id="dvHn">HN —</div>
+            <div class="dv-patient-meta-row">
+              <span class="dv-patient-chip" id="dvBed">เตียง —</span>
+              <span class="dv-patient-chip" id="dvWard">Ward —</span>
+              <span class="dv-patient-chip" id="dvDemo">— · — ปี</span>
+            </div>
+          </div>
+        </div>
+        <div class="dv-patient-cond-row">
+          <span class="dv-patient-cond-lbl">การวินิจฉัย</span>
+          <span class="dv-patient-cond-val" id="dvCond">—</span>
+        </div>
+      </div>
+
+      <!-- Allergy alert (red banner if any) -->
+      <div class="dv-allergy-banner" id="dvAllergyBanner" hidden>
+        <div class="dv-allergy-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="dv-allergy-body">
+          <div class="dv-allergy-title">⚠ แพ้ยา (Drug Allergy)</div>
+          <div class="dv-allergy-sub">โปรดตรวจสอบยาที่จ่ายว่าไม่มีรายการเหล่านี้</div>
+          <div class="dv-allergy-list" id="dvAllergyList"></div>
+        </div>
+      </div>
+
+      <!-- Vital signs -->
+      <div class="dv-vital-section">
+        <div class="dv-vital-head">
+          <div>
+            <div class="dv-vital-title">สัญญาณชีพล่าสุด</div>
+            <div class="dv-vital-time" id="dvVitalTime">วัดเมื่อ 30 นาทีที่แล้ว</div>
+          </div>
+          <span class="dv-vital-status dv-vital-status-ok" id="dvVitalStatus">ปกติ</span>
+        </div>
+        <div class="dv-vital-grid">
+          <div class="dv-vital-cell" id="dvVitalBP">
+            <div class="dv-vital-label">BP</div>
+            <div class="dv-vital-val">130<span class="dv-vital-sep">/</span>85</div>
+            <div class="dv-vital-unit">mmHg</div>
+          </div>
+          <div class="dv-vital-cell" id="dvVitalHR">
+            <div class="dv-vital-label">HR</div>
+            <div class="dv-vital-val">78</div>
+            <div class="dv-vital-unit">bpm</div>
+          </div>
+          <div class="dv-vital-cell" id="dvVitalTemp">
+            <div class="dv-vital-label">Temp</div>
+            <div class="dv-vital-val">37.0</div>
+            <div class="dv-vital-unit">°C</div>
+          </div>
+          <div class="dv-vital-cell" id="dvVitalSpO2">
+            <div class="dv-vital-label">SpO₂</div>
+            <div class="dv-vital-val">98</div>
+            <div class="dv-vital-unit">%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drugs to dispense preview -->
+      <div class="dv-meds-preview">
+        <div class="dv-meds-head">
+          <div class="dv-meds-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>
+            ยาที่ต้องจ่ายในรอบนี้
+          </div>
+          <span class="dv-meds-count" id="dvMedsCount">0 รายการ</span>
+        </div>
+        <div class="dv-meds-list" id="dvMedsList"></div>
+      </div>
+
+    </div>
+
+    <!-- Sticky action bar -->
+    <div class="dv-action-bar" id="dvActionBar" hidden>
+      <button type="button" class="dv-btn-secondary" onclick="resetWristbandScan()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        สแกนใหม่
+      </button>
+      <button type="button" class="dv-btn-primary" onclick="confirmPatientGoAdminister()">
+        ยืนยัน → จ่ายยา
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Med Cart v3.2.1</span>
+        <span class="footer-sep">·</span>
+        <span data-hw-id>MC-A-001</span>
+        <span class="footer-sep">·</span>
+        <div class="footer-batt">
+          <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+          <span>85%</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </footer>
+
+</div>
+</template>
+
+<!-- ════════════════════════════════════════════════════════
+     DISPENSE FLOW — Page 4: Medication Administration
+     ════════════════════════════════════════════════════════ -->
+<template id="pg-dispense-administer">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">จ่ายยา · สแกนและให้ยา</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="da-body">
+
+    <div class="hdr-nav-bar">
+      <button class="hdr-back" onclick="location.hash='#pg-dispense-verify'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        ย้อนกลับ
+      </button>
+      <button class="hdr-back hdr-home" onclick="location.hash='#pg-dashboard'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
+        หน้าหลัก
+      </button>
+    </div>
+
+    <!-- Patient summary banner -->
+    <div class="da-pt-banner">
+      <div class="da-pt-avatar" id="daPtAvatar">—</div>
+      <div class="da-pt-info">
+        <div class="da-pt-name" id="daPtName">—</div>
+        <div class="da-pt-meta">
+          <span id="daPtHn">HN —</span>
+          <span class="da-sep">·</span>
+          <span id="daPtBed">เตียง —</span>
+          <span class="da-sep">·</span>
+          <span id="daPtWard">Ward —</span>
+        </div>
+      </div>
+      <div class="da-pt-allergy" id="daPtAllergy" hidden>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>แพ้: <span id="daPtAllergyList">—</span></span>
+      </div>
+      <div class="da-pt-progress">
+        <div class="da-progress-num"><span id="daProgressDone">0</span> / <span id="daProgressTotal">0</span></div>
+        <div class="da-progress-lbl">รายการ</div>
+      </div>
+    </div>
+
+    <!-- 2-column main grid -->
+    <div class="da-grid">
+
+      <!-- LEFT: Meds list -->
+      <div class="da-list-col">
+        <div class="da-list-head">
+          <div class="da-list-title">รายการยาในรอบนี้</div>
+          <span class="da-list-count" id="daListCount">0 รายการ</span>
+        </div>
+        <div class="da-list" id="daList"></div>
+      </div>
+
+      <!-- RIGHT: Current drug detail + scan -->
+      <div class="da-detail-col" id="daDetailCol">
+        <!-- Drug detail head -->
+        <div class="da-detail-head">
+          <div class="da-detail-icon" id="daDetailIcon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 3.5a5 5 0 0 1 7.07 7.07L7.07 20.57A5 5 0 1 1 3.5 14 5 5 0 0 1 10.5 3.5z"/><line x1="9" y1="9" x2="15.5" y2="15.5"/></svg>
+          </div>
+          <div class="da-detail-info">
+            <div class="da-detail-name" id="daDetailName">—</div>
+            <div class="da-detail-dose" id="daDetailDose">—</div>
+            <div class="da-detail-chips">
+              <span class="da-chip" id="daDetailQty">×1 เม็ด</span>
+              <span class="da-chip" id="daDetailRoute">PO</span>
+              <span class="da-chip" id="daDetailRound">รอบเช้า</span>
+              <span class="da-chip da-chip-time" id="daDetailTime">08:00</span>
+            </div>
+          </div>
+          <div class="da-detail-step" id="daDetailStep">
+            <div class="da-detail-step-num">1</div>
+            <div class="da-detail-step-lbl">/ <span id="daDetailStepTotal">5</span></div>
+          </div>
+        </div>
+
+        <!-- High alert banner (conditional) -->
+        <div class="da-high-alert-banner" id="daHighAlert" hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div>
+            <div class="da-high-alert-title">⚠ HIGH ALERT</div>
+            <div class="da-high-alert-sub">ต้องสแกนยา 2 ครั้ง + พยาบาลคนที่ 2 ยืนยัน</div>
+          </div>
+        </div>
+
+        <!-- Allergy cross-check warning (conditional) -->
+        <div class="da-allergy-check" id="daAllergyCheck" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span>หยุด — ผู้ป่วยแพ้ยานี้ <b id="daAllergyMatch">—</b></span>
+        </div>
+
+        <!-- ── Step A: Drawer location(s) + Unlock (shown before scanning) ── -->
+        <div class="da-loc-card" id="daLocCard">
+          <div class="da-loc-head">
+            <div class="da-loc-head-left">
+              <div class="da-loc-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="10" y1="10" x2="10" y2="20"/></svg>
+              </div>
+              <div>
+                <div class="da-loc-label">ตำแหน่งยา</div>
+                <div class="da-loc-count" id="daLocCount">— ตำแหน่ง</div>
+              </div>
+            </div>
+            <div class="da-loc-light" id="daLocLight" data-state="locked">
+              <span class="da-loc-light-dot"></span>
+              <span class="da-loc-light-txt" id="daLocLightTxt">ล็อคอยู่</span>
+            </div>
+          </div>
+          <div class="da-loc-list" id="daLocList"></div>
+          <button type="button" class="da-unlock-btn" id="daUnlockBtn" onclick="daUnlockDrawer()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+            ปลดล็อกลิ้นชัก <span id="daUnlockCount"></span>
+          </button>
+        </div>
+
+        <!-- ── 7 Rights checklist ── -->
+        <div class="da-rights-card" id="daRightsCard">
+          <div class="da-rights-head">
+            <div class="da-rights-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+              7 Rights of Medication
+            </div>
+            <span class="da-rights-meta" id="daRightsMeta">0 / 7 ✓</span>
+          </div>
+          <div class="da-rights-actor">
+            <span class="da-rights-actor-avatar" id="daRightsActorAvatar">—</span>
+            <div>
+              <div class="da-rights-actor-lbl">ผู้ตรวจสอบ</div>
+              <div class="da-rights-actor-name" id="daRightsActorName">—</div>
+            </div>
+            <span class="da-rights-actor-2nd" id="daRightsActor2nd" hidden></span>
+          </div>
+          <div class="da-rights-list" id="daRightsList"></div>
+        </div>
+
+        <!-- ── Step B: Bag scan progress (1 bag per dose) ── -->
+        <div class="da-qty-card" id="daQtyCard" hidden>
+          <div class="da-qty-head">
+            <div class="da-qty-label">หยิบ 1 ถุง แล้วสแกน Barcode</div>
+            <div class="da-qty-fraction"><b id="daQtyDone">0</b> / <span id="daQtyTotal">1</span> ถุง</div>
+          </div>
+          <div class="da-qty-track"><div class="da-qty-fill" id="daQtyFill"></div></div>
+          <div class="da-qty-remain" id="daQtyRemain">รอสแกนถุงยา</div>
+        </div>
+
+        <!-- Scan area -->
+        <div class="da-scan-area" id="daScanArea" onclick="daSimulateScan()">
+          <div class="da-scan-frame">
+            <div class="da-scan-corner tl"></div>
+            <div class="da-scan-corner tr"></div>
+            <div class="da-scan-corner bl"></div>
+            <div class="da-scan-corner br"></div>
+            <div class="da-scan-line" id="daScanLine"></div>
+            <div class="da-scan-icon" id="daScanIcon">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="2" height="14"/><rect x="6" y="5" width="1" height="14"/><rect x="9" y="5" width="3" height="14"/><rect x="14" y="5" width="1" height="14"/><rect x="17" y="5" width="2" height="14"/><rect x="21" y="5" width="1" height="14"/></svg>
+            </div>
+            <div class="da-scan-success" id="daScanSuccess" hidden>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>
+            </div>
+          </div>
+          <div class="da-scan-hint" id="daScanHint">แตะเพื่อสแกน Barcode ยา</div>
+          <div class="da-scan-counter" id="daScanCounter" hidden>สแกนครั้งที่ 1 / 2</div>
+        </div>
+
+        <!-- inline pill: shown when HA bag scanned but 2nd nurse not yet verified -->
+        <button type="button" class="da-2nd-pending" id="da2ndPending" hidden onclick="daOpen2ndModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          รอสแกนพยาบาลคนที่ 2 — แตะเพื่อสแกน
+        </button>
+
+        <!-- Action buttons -->
+        <div class="da-actions" id="daActions">
+          <button type="button" class="da-btn da-btn-refuse" onclick="daMarkRefused()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            Refuse
+          </button>
+          <button type="button" class="da-btn da-btn-hold" onclick="daMarkHeld()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Hold / Late
+          </button>
+          <button type="button" class="da-btn da-btn-give" id="daBtnGive" onclick="daMarkGiven()" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            จ่ายแล้ว
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Sticky bottom bar -->
+    <div class="da-confirm-bar">
+      <div>
+        <div class="da-confirm-label">ความคืบหน้า</div>
+        <div class="da-confirm-summary" id="daConfirmSummary">รอเริ่มสแกน</div>
+      </div>
+      <button type="button" class="da-confirm-btn" id="daConfirmBtn" onclick="daFinishRound()">
+        ดูสรุปการจ่าย
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Med Cart v3.2.1</span>
+        <span class="footer-sep">·</span>
+        <span data-hw-id>MC-A-001</span>
+        <span class="footer-sep">·</span>
+        <div class="footer-batt">
+          <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+          <span>85%</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </footer>
+
+  <!-- HIGH ALERT — 2nd nurse badge scan modal -->
+  <div class="da-2nd-modal" id="da2ndModal" hidden>
+    <div class="da-2nd-modal-backdrop" onclick="daClose2ndModal()"></div>
+    <div class="da-2nd-modal-card">
+      <div class="da-2nd-modal-badge">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        HIGH ALERT
+      </div>
+      <div class="da-2nd-modal-title">ยืนยันโดยพยาบาลคนที่ 2</div>
+      <div class="da-2nd-modal-sub">
+        ยา <b id="da2ndDrugName">—</b> เป็นยา High Alert<br>
+        ให้พยาบาลคนที่ 2 สแกน Barcode บัตรพนักงานเพื่อยืนยันการให้ยา
+      </div>
+      <button type="button" class="da-2nd-scan" id="da2ndScanArea" onclick="daScan2ndNurse()">
+        <div class="da-2nd-scan-line" id="da2ndScanLine"></div>
+        <div class="da-2nd-scan-icon" id="da2ndScanIcon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M7 17c1-2 3-3 5-3s4 1 5 3"/></svg>
+        </div>
+        <div class="da-2nd-scan-success" id="da2ndScanSuccess" hidden>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </button>
+      <div class="da-2nd-scan-hint" id="da2ndScanHint">แตะเพื่อจำลองการสแกนบัตรพนักงาน</div>
+      <button type="button" class="da-2nd-modal-cancel" onclick="daClose2ndModal()">ภายหลัง</button>
+    </div>
+  </div>
+
+</div>
+</template>
+
+<!-- Alert modal (shared) — for wrong drug / expired / wrong patient errors -->
+<div class="da-alert-overlay" id="daAlertOverlay" hidden onclick="daCloseAlert(event)">
+  <div class="da-alert-modal" id="daAlertModal" onclick="event.stopPropagation()">
+    <div class="da-alert-icon">
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="da-alert-title" id="daAlertTitle">หยุด</div>
+    <div class="da-alert-msg" id="daAlertMsg">—</div>
+    <div class="da-alert-actions">
+      <button type="button" class="da-alert-btn-secondary" id="daAlertSecondary" onclick="daCloseAlert()">รับทราบ</button>
+      <button type="button" class="da-alert-btn-primary" id="daAlertPrimary" onclick="daCloseAlert()">เข้าใจ ดำเนินการต่อ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reason picker modal — for refuse / hold -->
+<div class="da-reason-overlay" id="daReasonOverlay" hidden onclick="daCloseReason(event)">
+  <div class="da-reason-modal" id="daReasonModal" onclick="event.stopPropagation()">
+    <button type="button" class="da-reason-close" onclick="daCloseReason()" aria-label="ปิด">×</button>
+    <div class="da-reason-title" id="daReasonTitle">เลือกเหตุผล</div>
+    <div class="da-reason-list" id="daReasonList"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     DISPENSE FLOW — Page 5: Summary & Confirmation (MAR)
+     ════════════════════════════════════════════════════════ -->
+<template id="pg-dispense-summary">
+<div class="page">
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-brand">
+        <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="2"/><line x1="5" y1="8" x2="19" y2="8"/><line x1="5" y1="13" x2="19" y2="13"/><circle cx="8" cy="20" r="1.5"/><circle cx="16" cy="20" r="1.5"/></svg></div>
+        <div>
+          <div class="brand-name">Smart Medication Cart</div>
+          <div class="brand-sub">จ่ายยา · สรุปและยืนยัน</div>
+        </div>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="nav-ctx-pill">
+        <span class="nav-chip" data-cart-shortid>A-1</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-chip nav-chip-ghost" data-ward-name>Ward 3A</span>
+        <span class="nav-ctx-sep"></span>
+        <span class="nav-online-pill"><span class="nav-online-dot"></span>Online</span>
+      </div>
+      <div class="topnav-spacer"></div>
+      <div class="topnav-right">
+        <div class="nav-clock">
+          <div class="clock-time" id="clock">--:--:--</div>
+          <div class="clock-date" id="dateTh"></div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="ds-body">
+
+    <!-- Hero summary -->
+    <div class="ds-hero">
+      <div class="ds-hero-icon" id="dsHeroIcon">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>
+      </div>
+      <div class="ds-hero-text">
+        <div class="ds-hero-title" id="dsHeroTitle">จ่ายยาเสร็จสิ้น</div>
+        <div class="ds-hero-sub" id="dsHeroSub">รอยืนยันเพื่อบันทึก MAR</div>
+      </div>
+      <div class="ds-hero-stats">
+        <div class="ds-hero-stat ds-stat-given">
+          <div class="ds-stat-num" id="dsStatGiven">0</div>
+          <div class="ds-stat-lbl">จ่ายแล้ว</div>
+        </div>
+        <div class="ds-hero-stat ds-stat-held">
+          <div class="ds-stat-num" id="dsStatHeld">0</div>
+          <div class="ds-stat-lbl">Hold</div>
+        </div>
+        <div class="ds-hero-stat ds-stat-refused">
+          <div class="ds-stat-num" id="dsStatRefused">0</div>
+          <div class="ds-stat-lbl">Refuse</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Patient + meta info card -->
+    <div class="ds-meta-card">
+      <div class="ds-meta-pt">
+        <div class="ds-meta-avatar" id="dsAvatar">—</div>
+        <div>
+          <div class="ds-meta-name" id="dsName">—</div>
+          <div class="ds-meta-line" id="dsPtLine">HN — · เตียง — · Ward —</div>
+        </div>
+      </div>
+      <div class="ds-meta-grid">
+        <div class="ds-meta-cell">
+          <div class="ds-meta-lbl">รอบเวลา</div>
+          <div class="ds-meta-val" id="dsRound">—</div>
+        </div>
+        <div class="ds-meta-cell">
+          <div class="ds-meta-lbl">ผู้จ่ายยา</div>
+          <div class="ds-meta-val" id="dsNurse">—</div>
+        </div>
+        <div class="ds-meta-cell">
+          <div class="ds-meta-lbl">เวลาบันทึก</div>
+          <div class="ds-meta-val" id="dsTime">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ Given section -->
+    <div class="ds-section ds-section-given" id="dsSecGiven">
+      <div class="ds-sec-head">
+        <div class="ds-sec-title">
+          <span class="ds-sec-icon ds-icon-given">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          จ่ายแล้ว
+        </div>
+        <span class="ds-sec-count" id="dsCntGiven">0 รายการ</span>
+      </div>
+      <div class="ds-sec-list" id="dsListGiven"></div>
+    </div>
+
+    <!-- ⏸ Held section -->
+    <div class="ds-section ds-section-held" id="dsSecHeld" hidden>
+      <div class="ds-sec-head">
+        <div class="ds-sec-title">
+          <span class="ds-sec-icon ds-icon-held">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </span>
+          Hold / Late
+        </div>
+        <span class="ds-sec-count" id="dsCntHeld">0 รายการ</span>
+      </div>
+      <div class="ds-sec-list" id="dsListHeld"></div>
+    </div>
+
+    <!-- ✗ Refused section -->
+    <div class="ds-section ds-section-refused" id="dsSecRefused" hidden>
+      <div class="ds-sec-head">
+        <div class="ds-sec-title">
+          <span class="ds-sec-icon ds-icon-refused">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </span>
+          Refuse
+        </div>
+        <span class="ds-sec-count" id="dsCntRefused">0 รายการ</span>
+      </div>
+      <div class="ds-sec-list" id="dsListRefused"></div>
+    </div>
+
+    <!-- Notes -->
+    <div class="ds-notes-card">
+      <label class="ds-notes-label" for="dsNotes">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+        บันทึกเพิ่มเติม (ไม่บังคับ)
+      </label>
+      <textarea id="dsNotes" class="ds-notes-input" placeholder="เช่น สังเกตอาการพิเศษ, การปฏิบัติเพิ่มเติม..."></textarea>
+    </div>
+
+    <!-- Action bar -->
+    <div class="ds-action-bar">
+      <button type="button" class="ds-btn-secondary" onclick="location.hash='#pg-dispense-administer'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        แก้ไข
+      </button>
+      <button type="button" class="ds-btn-primary" onclick="dsConfirmAndSave()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        ยืนยันและบันทึก MAR
+      </button>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <span>Med Cart v3.2.1</span>
+        <span class="footer-sep">·</span>
+        <span data-hw-id>MC-A-001</span>
+        <span class="footer-sep">·</span>
+        <div class="footer-batt">
+          <div class="mini-batt"><div class="mini-batt-fill"></div></div>
+          <span>85%</span>
+        </div>
+      </div>
+      <button type="button" class="btn-logout" onclick="logout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </footer>
+
+</div>
+</template>
 
 <script src="script.js"></script>
 <script>
