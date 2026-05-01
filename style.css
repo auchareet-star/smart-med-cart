@@ -2543,6 +2543,76 @@ body {
 .cass-btn:hover { opacity: .8; }
 .cass-btn-remove { background: var(--mc-out-bg); color: var(--mc-out-fg); }
 .cass-btn-refill { background: var(--mc-blue); color: #fff; }
+.cass-btn-assign { background: var(--accent); color: #fff; }
+
+/* Empty slot — clickable for first-time drug assignment */
+.cass-cell-empty-clickable {
+  pointer-events: auto !important;
+  cursor: pointer;
+  border-style: dashed;
+  opacity: .8;
+}
+.cass-cell-empty-clickable:hover {
+  opacity: 1;
+  border-color: var(--accent);
+  background: var(--accent-lt);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0,0,0,.06);
+}
+
+/* Assign drug modal — drug picker list + qty input */
+.assign-drug-list {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 300px; overflow-y: auto;
+  padding-right: 4px;
+}
+.assign-drug-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--border); background: #fff;
+  cursor: pointer; font-family: inherit; text-align: left;
+  transition: all .12s;
+}
+.assign-drug-row:hover {
+  border-color: var(--accent);
+  background: var(--accent-lt);
+}
+.assign-drug-row.selected {
+  border-color: var(--accent);
+  background: var(--accent-lt);
+  box-shadow: 0 0 0 2px rgba(13,148,136,.15);
+}
+.assign-drug-icon {
+  width: 32px; height: 32px; flex-shrink: 0;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; letter-spacing: .3px;
+}
+.assign-drug-icon.oral { background: #dbeafe; color: #1e40af; }
+.assign-drug-icon.iv   { background: #ccfbf1; color: #0f766e; }
+.assign-drug-info { flex: 1; min-width: 0; }
+.assign-drug-name {
+  font-size: 13px; font-weight: 700; color: var(--text-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.assign-drug-dose {
+  font-size: 11px; color: var(--text-3); margin-top: 1px;
+}
+.assign-qty-section { padding-top: 4px; }
+.assign-qty-input {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.assign-qty-input input {
+  font-size: 16px; font-weight: 700;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  font-family: inherit;
+  outline: none; transition: border-color .15s;
+}
+.assign-qty-input input:focus { border-color: var(--accent); }
+.assign-qty-hint {
+  font-size: 11px; color: var(--text-3);
+}
 
 /* Mini lock indicator in drawer tile */
 .dm-cell { position: relative; }
@@ -4924,6 +4994,25 @@ body {
 }
 .ppw-hero { margin-bottom: 0; }
 .ppw-hero-stats { display: flex; align-items: center; gap: 20px; }
+
+/* Round filter chips on Order page */
+.ppw-round-chips {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 4px 0;
+}
+.ppw-round-chip {
+  padding: 8px 16px; border-radius: 999px;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  background: #fff; color: var(--text-2);
+  border: 1px solid var(--border);
+  cursor: pointer; transition: all .15s;
+}
+.ppw-round-chip:hover { border-color: var(--accent); color: var(--accent-dk); }
+.ppw-round-chip.active {
+  background: var(--accent); color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(13,148,136,.25);
+}
 .ppw-hs { text-align: center; }
 .ppw-hs-num { font-size: 32px; font-weight: 800; color: #fff; line-height: 1; }
 .ppw-hs-lbl { font-size: 11px; color: rgba(255,255,255,.7); margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
@@ -5106,7 +5195,85 @@ body {
 }
 .scan-success-sub {
   font-size: 13px; font-weight: 500; color: #047857;
-  margin-bottom: 22px;
+  margin-bottom: 16px;
+}
+
+/* 5-Rights checklist inside success card */
+.scan-rights-list {
+  display: flex; flex-direction: column; gap: 8px;
+  text-align: left;
+  margin-bottom: 18px;
+  padding: 12px;
+  background: rgba(255,255,255,.6);
+  border: 1px solid rgba(16,185,129,.2);
+  border-radius: 12px;
+}
+.scan-right-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 8px 10px; border-radius: 8px;
+  cursor: pointer; transition: background .12s;
+}
+.scan-right-item:hover { background: rgba(16,185,129,.06); }
+.scan-right-cb {
+  width: 18px; height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #10b981;
+  flex-shrink: 0;
+}
+.scan-right-text { flex: 1; min-width: 0; }
+.scan-right-label {
+  font-size: 13px; font-weight: 700; color: var(--text-1);
+  margin-bottom: 2px;
+}
+.scan-right-detail {
+  font-size: 12px; color: var(--text-2);
+  word-break: break-word;
+}
+.scan-right-cb:checked ~ .scan-right-text .scan-right-label {
+  color: #047857;
+  text-decoration: line-through;
+  text-decoration-color: rgba(4,120,87,.4);
+}
+
+/* Warning variant — partially scanned (some items missing in cart) */
+.scan-success-card.scan-success-warn {
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
+  border-color: #f59e0b;
+  box-shadow: 0 8px 24px rgba(245,158,11,.18);
+}
+.scan-success-card.scan-success-warn .scan-success-badge {
+  background: #f59e0b;
+  box-shadow: 0 6px 20px rgba(245,158,11,.35);
+}
+.scan-success-card.scan-success-warn .scan-success-title { color: #92400e; }
+.scan-success-card.scan-success-warn .scan-success-sub   { color: #b45309; }
+.scan-success-card.scan-success-warn .scan-success-btn-secondary {
+  color: #92400e; border-color: #f59e0b;
+}
+.scan-success-card.scan-success-warn .scan-success-btn-secondary:hover { background: #fffbeb; }
+.scan-success-card.scan-success-warn .scan-success-btn-primary {
+  background: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,.3);
+}
+
+/* Fail variant — all items missing in cart, nothing scanned */
+.scan-success-card.scan-success-fail {
+  background: linear-gradient(180deg, #fef2f2 0%, #ffffff 100%);
+  border-color: #ef4444;
+  box-shadow: 0 8px 24px rgba(239,68,68,.18);
+}
+.scan-success-card.scan-success-fail .scan-success-badge {
+  background: #ef4444;
+  box-shadow: 0 6px 20px rgba(239,68,68,.35);
+}
+.scan-success-card.scan-success-fail .scan-success-title { color: #991b1b; }
+.scan-success-card.scan-success-fail .scan-success-sub   { color: #b91c1c; }
+.scan-success-card.scan-success-fail .scan-success-btn-secondary {
+  color: #991b1b; border-color: #ef4444;
+}
+.scan-success-card.scan-success-fail .scan-success-btn-secondary:hover { background: #fef2f2; }
+.scan-success-card.scan-success-fail .scan-success-btn-primary {
+  background: #ef4444; box-shadow: 0 4px 12px rgba(239,68,68,.3);
 }
 .scan-success-actions {
   display: flex; gap: 10px; justify-content: stretch;
@@ -5130,6 +5297,13 @@ body {
   background: #10b981; color: #fff; border: none;
   box-shadow: 0 4px 12px rgba(16,185,129,.3);
 }
+.scan-success-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  box-shadow: none;
+  filter: grayscale(.3);
+}
+.scan-success-btn:disabled:hover { transform: none; background: inherit; }
 .scan-success-btn-primary:hover {
   background: #059669; transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(16,185,129,.4);
@@ -5160,6 +5334,136 @@ body {
   background: var(--bg); color: var(--text-3);
 }
 .scan-queue-item.done .scan-queue-status { background: #dcfce7; color: #16a34a; }
+
+/* ── Patient-mode context banner (above scan card) ─── */
+.scan-pt-ctx-banner {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+  border-radius: 18px;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(79,70,229,.3);
+  animation: scanBannerIn .25s cubic-bezier(.34,1.56,.64,1);
+}
+.scan-pt-ctx-banner.all-done {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  box-shadow: 0 6px 20px rgba(5,150,105,.3);
+}
+@keyframes scanBannerIn {
+  from { opacity: 0; transform: translateY(-8px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.scan-pt-ctx-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.scan-pt-ctx-avatar {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,255,255,.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800;
+}
+.scan-pt-ctx-info { flex: 1; min-width: 0; }
+.scan-pt-ctx-eyebrow { font-size: 10px; font-weight: 600; opacity: .75; letter-spacing: .4px; text-transform: uppercase; }
+.scan-pt-ctx-name { font-size: 15px; font-weight: 800; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scan-pt-ctx-sub { font-size: 11.5px; opacity: .75; margin-top: 2px; }
+.scan-pt-ctx-prog {
+  margin-top: 7px; height: 3px; border-radius: 4px;
+  background: rgba(255,255,255,.25); overflow: hidden;
+}
+.scan-pt-ctx-prog > div { height: 100%; border-radius: 4px; background: #fff; transition: width .4s; }
+.scan-pt-ctx-right {
+  flex-shrink: 0; text-align: center;
+  background: rgba(255,255,255,.15); border-radius: 12px;
+  padding: 8px 12px;
+}
+.scan-pt-ctx-num { font-size: 18px; font-weight: 800; line-height: 1; }
+.scan-pt-ctx-total { font-size: 13px; font-weight: 600; opacity: .7; }
+.scan-pt-ctx-num-lbl { font-size: 10px; opacity: .7; margin-top: 2px; }
+
+/* ── Drug checklist (patient mode queue) ─── */
+.scan-ql-head {
+  font-size: 11px; font-weight: 700; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: .4px;
+  padding: 0 2px 8px;
+  border-bottom: 2px solid #e0e7ff;
+  margin-bottom: 4px;
+}
+.scan-ql-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 14px; margin-bottom: 8px;
+  transition: all .2s;
+}
+.scan-ql-item:last-child { margin-bottom: 0; }
+.scan-ql-item.ql-active {
+  border-color: #4f46e5; background: #eef2ff;
+  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+}
+.scan-ql-item.ql-done {
+  border-color: #10b981; background: #f0fdf4; opacity: .85;
+}
+.scan-ql-item.ql-warn {
+  border-color: #f59e0b; background: #fffbeb;
+}
+.scan-ql-icon {
+  width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); color: var(--text-3); border: 1.5px solid var(--border);
+}
+.scan-ql-item.ql-active .scan-ql-icon { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+.scan-ql-item.ql-done  .scan-ql-icon { background: #10b981; color: #fff; border-color: #10b981; }
+.scan-ql-item.ql-warn  .scan-ql-icon { background: #fef3c7; color: #b45309; border-color: #f59e0b; }
+.scan-ql-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); opacity: .35; }
+.scan-ql-info { flex: 1; min-width: 0; }
+.scan-ql-name { font-size: 13px; font-weight: 700; color: var(--text-1); }
+.scan-ql-item.ql-active .scan-ql-name { color: #3730a3; }
+.scan-ql-item.ql-done   .scan-ql-name { color: #065f46; }
+.scan-ql-dose { font-size: 11px; font-weight: 500; color: var(--text-3); }
+.scan-ql-loc { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.scan-ql-item.ql-active .scan-ql-loc { color: #6366f1; }
+.scan-ql-badge {
+  flex-shrink: 0; font-size: 10.5px; font-weight: 700;
+  padding: 4px 9px; border-radius: 8px;
+  background: var(--bg); color: var(--text-3);
+}
+.scan-ql-badge.active { background: #4f46e5; color: #fff; }
+.scan-ql-badge.done   { background: #d1fae5; color: #065f46; }
+.scan-ql-badge.warn   { background: #fef3c7; color: #b45309; }
+
+/* ── Drug mode: patient distribution panel ─── */
+.scan-pt-panel-drug {
+  border: 1.5px solid var(--accent-dk) !important;
+  overflow: hidden;
+}
+.scan-pt-drug-header {
+  padding: 12px 16px 10px;
+  background: linear-gradient(135deg, var(--accent-lt2), var(--accent-lt));
+  border-bottom: 1px solid var(--accent-dk);
+}
+.scan-pt-drug-header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 5px;
+}
+.scan-pt-drug-dist-label {
+  font-size: 12px; font-weight: 700; color: var(--accent-dk);
+  display: flex; align-items: center; gap: 5px;
+}
+.scan-pt-drug-count {
+  font-size: 12px; font-weight: 700;
+  background: var(--accent-dk); color: #fff;
+  border-radius: 20px; padding: 2px 10px;
+}
+.scan-pt-drug-stock-row {
+  font-size: 11px; color: var(--accent-dk); display: flex; align-items: center; gap: 6px; margin-bottom: 7px;
+}
+.scan-pt-drug-stock-sep { opacity: .4; }
+.scan-drug-stock-bar {
+  height: 4px; border-radius: 4px;
+  background: rgba(45,191,163,.2); overflow: hidden;
+}
+.scan-drug-stock-bar-fill {
+  height: 100%; border-radius: 4px;
+  background: var(--accent); transition: width .4s;
+}
 
 .scan-area {
   background: var(--surface); border: 1.5px solid var(--border);
@@ -5213,6 +5517,76 @@ body {
 }
 
 .ppd-hero { margin-bottom: 0; }
+
+/* Patient mode hero layout */
+.ppd-hero-pt { display: flex; align-items: center; gap: 18px; }
+.ppd-hero-pt-avatar {
+  width: 60px; height: 60px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 800;
+}
+.ppd-hero-pt-info { flex: 1; min-width: 0; }
+.ppd-hero-allergy {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: #fca5a5;
+  background: rgba(239,68,68,.2); border: 1px solid rgba(239,68,68,.35);
+  border-radius: 8px; padding: 4px 10px; margin-top: 8px;
+}
+
+/* Drug mode hero layout */
+.ppd-hero-drug { display: flex; align-items: center; gap: 18px; }
+.ppd-hero-drug-icon {
+  width: 64px; height: 64px; border-radius: 20px; flex-shrink: 0;
+  background: rgba(255,255,255,.15); border: 2px solid rgba(255,255,255,.25);
+  display: flex; align-items: center; justify-content: center;
+}
+.ppd-hero-drug-icon.iv { background: rgba(255,255,255,.2); }
+.ppd-hero-drug-info { flex: 1; min-width: 0; }
+.ppd-hero-route-tag { font-size: 10px !important; padding: 3px 9px !important; }
+
+/* Indigo icon for right panel in patient mode */
+.dash-panel-icon-indigo {
+  background: linear-gradient(135deg,#eef2ff,#e0e7ff);
+  color: #4f46e5;
+}
+
+/* ── Patient mode: indigo/blue accent throughout ppd page ──── */
+.ppd-mode-patient .ppd-hero {
+  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 55%, #1d4ed8 100%);
+  box-shadow: 0 10px 28px rgba(79,70,229,.22);
+}
+.ppd-mode-patient .ppd-step.active .ppd-step-dot { background: #4f46e5; }
+.ppd-mode-patient .ppd-step.done  .ppd-step-dot  { background: #6366f1; }
+.ppd-mode-patient .ppd-step.active .ppd-step-lbl,
+.ppd-mode-patient .ppd-step.done  .ppd-step-lbl  { color: #4f46e5; }
+.ppd-mode-patient .ppd-step-fill          { background: rgba(99,102,241,.2); }
+.ppd-mode-patient .ppd-step-fill.done     { background: linear-gradient(90deg,#4f46e5,#6366f1); }
+.ppd-mode-patient .ppd-drawer-slot.selected {
+  border-color: #4f46e5; background: #eef2ff;
+  box-shadow: 0 0 0 3px rgba(79,70,229,.15), 0 4px 12px rgba(79,70,229,.15);
+}
+.ppd-mode-patient .ppd-drawer-slot.selected .ppd-drawer-slot-icon {
+  background: linear-gradient(135deg,#eef2ff,#e0e7ff); color: #4f46e5; border-color: #4f46e5;
+}
+.ppd-mode-patient .ppd-drawer-slot.selected .ppd-drawer-num   { color: #3730a3; }
+.ppd-mode-patient .ppd-drawer-slot.selected .ppd-drawer-label { color: #4f46e5; font-weight: 700; }
+.ppd-mode-patient .ppd-drawer-slot:hover { border-color: #818cf8; }
+.ppd-mode-patient .ppd-drawer-slot:hover .ppd-drawer-slot-icon { border-color: #818cf8; color: #6366f1; }
+.ppd-mode-patient .ppd-drawer-slot:hover .ppd-drawer-num  { color: #6366f1; }
+.ppd-mode-patient .ppd-cass-slot.selected {
+  background: linear-gradient(135deg,#eef2ff,#e0e7ff); border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,.15), 0 4px 12px rgba(79,70,229,.12);
+}
+.ppd-mode-patient .ppd-cass-slot.selected::before {
+  background: linear-gradient(135deg,#4f46e5,#6366f1);
+}
+.ppd-mode-patient .ppd-cass-slot.selected .ppd-cass-num { color: #3730a3; }
+.ppd-mode-patient .ppd-cass-status-info[style*="accent"] {
+  background: #eef2ff !important; color: #4f46e5 !important;
+}
+.ppd-mode-patient .ptp-confirm-btn { background: linear-gradient(135deg,#4f46e5,#6366f1); }
+.ppd-mode-patient .ptp-confirm-btn:hover { background: linear-gradient(135deg,#4338ca,#4f46e5); }
 
 /* Step progress tracker */
 .ppd-steps {
@@ -5502,7 +5876,8 @@ body {
 .cass-info-modal {
   position: relative;
   background: #fff; border-radius: 18px;
-  width: 100%; max-width: 420px;
+  width: 100%; max-width: 460px;
+  max-height: 85vh; overflow-y: auto;
   box-shadow: 0 20px 50px rgba(0,0,0,.25);
   padding: 22px 22px 20px;
   animation: cassInfoPop .22s cubic-bezier(.34,1.56,.64,1);
@@ -5680,6 +6055,18 @@ body {
   .cass-info-modal.cass-v2 { max-width: 480px; }
 }
 
+/* Cassette info modal — round breakdown chips */
+.cass-info-round-row {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 6px 0 2px;
+}
+.cass-info-round-chip {
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+  background: var(--accent-lt); color: var(--accent-dk);
+  border: 1px solid rgba(13,148,136,.2);
+}
+
 /* Cassette info modal — patient list section */
 .cass-info-pt-section {
   margin-top: 16px;
@@ -5696,6 +6083,10 @@ body {
   font-size: 11px; font-weight: 700;
   background: #eff6ff; color: #2563eb;
   border-radius: 20px; padding: 2px 10px;
+}
+.cass-info-pt-section-title {
+  font-size: 11.5px; font-weight: 700; color: var(--text-2);
+  letter-spacing: .3px; text-transform: uppercase; margin-bottom: 8px;
 }
 .cass-info-pt-list { display: flex; flex-direction: column; gap: 6px; }
 .cass-info-pt-row {
@@ -5720,6 +6111,72 @@ body {
   font-size: 12px; font-weight: 700; color: #0369a1;
   background: #eff6ff; border-radius: 8px;
   padding: 3px 9px; white-space: nowrap; flex-shrink: 0;
+}
+
+/* ─── Cassette info modal — patient mode header ─── */
+.cass-info-pt-hero {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px 12px;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  border-bottom: 1px solid #c7d2fe;
+  margin: -4px -4px 0;
+  border-radius: 14px 14px 0 0;
+}
+.cass-info-pt-hero-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff; font-size: 20px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; box-shadow: 0 2px 8px rgba(79,70,229,.3);
+}
+.cass-info-pt-hero-info { flex: 1; min-width: 0; }
+.cass-info-pt-hero-eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  color: #6366f1; text-transform: uppercase; margin-bottom: 2px;
+}
+.cass-info-pt-hero-name {
+  font-size: 16px; font-weight: 800; color: #1e1b4b;
+  line-height: 1.25; margin-bottom: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cass-info-pt-hero-sub {
+  font-size: 11px; color: #6366f1; font-weight: 600;
+}
+.cass-info-allergy-row {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 5px; padding: 2px 8px;
+  background: #fee2e2; color: #b91c1c;
+  border-radius: 6px; font-size: 10px; font-weight: 700;
+}
+
+/* ─── Cassette info modal — drug card (patient mode) ─── */
+.cass-info-drug-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.cass-info-drug-card-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-lt), rgba(13,148,136,.2));
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--accent-dk);
+}
+.cass-info-drug-card-icon.iv {
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  color: #7c3aed;
+}
+.cass-info-drug-card-name {
+  font-size: 13px; font-weight: 700; color: var(--text-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cass-info-drug-card-dose {
+  font-size: 11px; color: var(--text-3); margin-top: 1px;
+}
+.cass-info-drug-card-qty {
+  font-size: 13px; font-weight: 800; color: #4f46e5;
+  background: #eef2ff; border-radius: 8px;
+  padding: 3px 10px; white-space: nowrap; flex-shrink: 0;
 }
 
 /* ─── Scan patient panel — patient mode (drug list) ─── */
@@ -6077,6 +6534,84 @@ body {
   font-size: 9px; font-weight: 800; letter-spacing: .3px;
   background: #f97316; color: #fff;
   padding: 2px 7px; border-radius: 10px;
+}
+.dv-out-of-round-pill {
+  font-size: 9px; font-weight: 800; letter-spacing: .3px;
+  background: #fef3c7; color: #92400e;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #fcd34d;
+}
+.dv-meds-row-oor { background: rgba(254,243,199,.35); }
+
+/* Dual-nurse override banner — for out-of-round dispensing */
+.dv-dual-nurse-banner {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  gap: 8px 12px;
+  padding: 14px;
+  background: linear-gradient(180deg, #fffbeb 0%, #fff 100%);
+  border: 1.5px solid #f59e0b;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(245,158,11,.15);
+}
+.dv-dn-icon {
+  width: 36px; height: 36px;
+  background: #f59e0b; color: #fff;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  grid-row: 1; grid-column: 1;
+}
+.dv-dn-text { grid-row: 1; grid-column: 2; min-width: 0; }
+.dv-dn-title { font-size: 14px; font-weight: 800; color: #92400e; }
+.dv-dn-sub   { font-size: 12px; color: #b45309; margin-top: 2px; }
+.dv-dn-slots {
+  grid-row: 2; grid-column: 1 / -1;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.dv-nurse-slot {
+  background: #fff; border: 1px solid #fcd34d; border-radius: 10px;
+  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.dv-nurse-slot.verified {
+  border-color: #10b981;
+  background: #ecfdf5;
+}
+.dv-nurse-slot-head {
+  display: flex; align-items: center; gap: 8px;
+}
+.dv-nurse-slot-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fde68a; color: #92400e;
+  font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.dv-nurse-slot.verified .dv-nurse-slot-num { background: #10b981; color: #fff; }
+.dv-nurse-slot-name {
+  flex: 1; min-width: 0;
+  font-size: 13px; font-weight: 700; color: var(--text-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dv-nurse-slot-check { color: #10b981; flex-shrink: 0; }
+.dv-nurse-slot-meta {
+  font-size: 11px; color: #047857;
+  letter-spacing: .8px;
+}
+.dv-nurse-scan-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 12px; border-radius: 8px;
+  background: #f59e0b; color: #fff; border: none;
+  font-size: 12px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: background .15s, transform .1s;
+}
+.dv-nurse-scan-btn:hover { background: #d97706; transform: translateY(-1px); }
+
+@media (max-width: 600px) {
+  .dv-dn-slots { grid-template-columns: 1fr; }
 }
 
 /* ─── Sticky action bar ─── */
@@ -7101,6 +7636,27 @@ body {
 }
 .dq-pt-tag-ha { background: #fed7aa; color: #c2410c; }
 .dq-pt-tag-allergy { background: #fee2e2; color: #991b1b; }
+.dq-pt-tag-oor { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+
+/* Out-of-round candidates section (queue search) */
+.dq-oor-section {
+  margin-top: 16px;
+  border-top: 1px dashed #fcd34d;
+  padding-top: 12px;
+}
+.dq-oor-section-title {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: #92400e;
+  margin-bottom: 10px;
+  padding: 4px 10px; border-radius: 999px;
+  background: #fffbeb; border: 1px solid #fcd34d;
+}
+.dq-pt-row-oor {
+  border-left: 4px solid #f59e0b;
+  padding-left: 12px;
+  background: linear-gradient(180deg, #fffbeb 0%, #fff 60%);
+}
+.dq-pt-row-oor:hover { border-color: #f59e0b; background: #fffbeb; }
 .dq-pt-status {
   flex-shrink: 0;
   display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
@@ -7897,6 +8453,34 @@ body {
   background: #fef3c7; border: 1px dashed #fbbf24;
   border-radius: 8px;
 }
+.da-loc-empty-oor {
+  display: inline-flex; align-items: center; gap: 6px;
+  width: auto; max-width: 100%;
+  background: #fffbeb; color: #92400e; border-color: #f59e0b;
+  font-weight: 700;
+}
+
+/* Dual-nurse override badge on admin page */
+.da-dn-badge {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, #ecfdf5 0%, #fff 100%);
+  border: 1.5px solid #10b981;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 10px rgba(16,185,129,.15);
+}
+.da-dn-badge[hidden] { display: none; }
+.da-dn-badge-icon {
+  width: 30px; height: 30px;
+  background: #10b981; color: #fff;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.da-dn-badge-text { flex: 1; min-width: 0; }
+.da-dn-badge-title { font-size: 13px; font-weight: 800; color: #065f46; }
+.da-dn-badge-sub   { font-size: 11px; color: #047857; margin-top: 2px; }
 
 /* Smaller icon + label compact for new layout */
 .da-loc-card .da-loc-icon {
@@ -8105,3 +8689,84 @@ body {
   background: #fef3c7; border: 1px solid #fbbf24;
   padding: 3px 9px; border-radius: 999px;
 }
+
+/* Prep flow — HIGH ALERT 2-witness modal */
+.prep-witness-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(15,23,42,.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.prep-witness-overlay[hidden] { display: none; }
+.prep-witness-modal {
+  width: min(440px, 100%);
+  background: #fff; border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.25);
+  border-top: 4px solid #f97316;
+}
+.prep-witness-head {
+  display: flex; align-items: flex-start; gap: 12px;
+  margin-bottom: 16px;
+}
+.prep-witness-icon {
+  width: 40px; height: 40px;
+  background: #f97316; color: #fff;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.prep-witness-title { font-size: 15px; font-weight: 800; color: #9a3412; }
+.prep-witness-sub   { font-size: 13px; color: #b45309; margin-top: 3px; }
+.prep-witness-slots {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 18px;
+}
+.prep-witness-slot {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 10px;
+  background: #fffbeb; border: 1.5px solid #fcd34d;
+}
+.prep-witness-slot.verified {
+  background: #ecfdf5; border-color: #10b981;
+}
+.prep-witness-slot-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: #fde68a; color: #92400e;
+  font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.prep-witness-slot.verified .prep-witness-slot-num { background: #10b981; color: #fff; }
+.prep-witness-slot-name {
+  flex: 1; min-width: 0;
+  font-size: 13px; font-weight: 700; color: var(--text-1);
+}
+.prep-witness-slot-check { color: #10b981; flex-shrink: 0; }
+.prep-witness-scan-btn {
+  padding: 8px 14px; border-radius: 8px;
+  background: #f97316; color: #fff; border: none;
+  font-size: 12px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: background .15s;
+  flex-shrink: 0;
+}
+.prep-witness-scan-btn:hover { background: #ea580c; }
+.prep-witness-actions {
+  display: flex; gap: 10px;
+}
+.prep-witness-btn {
+  flex: 1;
+  padding: 11px 16px; border-radius: 10px;
+  font-size: 13px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: all .15s;
+}
+.prep-witness-btn-cancel {
+  background: #fff; color: var(--text-2);
+  border: 1.5px solid var(--border);
+}
+.prep-witness-btn-cancel:hover { border-color: var(--text-3); }
+.prep-witness-btn-ok {
+  background: #f97316; color: #fff; border: none;
+  box-shadow: 0 3px 10px rgba(249,115,22,.3);
+}
+.prep-witness-btn-ok:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }

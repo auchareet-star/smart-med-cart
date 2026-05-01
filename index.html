@@ -2376,6 +2376,15 @@
       </button>
     </div>
 
+    <!-- Round filter chips — change round without going back to type page -->
+    <div class="ppw-round-chips" id="ppwRoundChips">
+      <button type="button" class="ppw-round-chip" data-round="all" onclick="setPpwRound('all')">ทุกรอบ</button>
+      <button type="button" class="ppw-round-chip" data-round="morning" onclick="setPpwRound('morning')">เช้า</button>
+      <button type="button" class="ppw-round-chip" data-round="noon" onclick="setPpwRound('noon')">กลางวัน</button>
+      <button type="button" class="ppw-round-chip" data-round="evening" onclick="setPpwRound('evening')">เย็น</button>
+      <button type="button" class="ppw-round-chip" data-round="bedtime" onclick="setPpwRound('bedtime')">ก่อนนอน</button>
+    </div>
+
     <div class="dash-hero ppw-hero">
       <div class="hero-left">
         <div class="hero-greet" id="ppwTitle">—</div>
@@ -2476,32 +2485,17 @@
 
     <!-- ═══ Hero: teal gradient with patient info ═══ -->
     <div class="dash-hero ppd-hero">
-      <div class="hero-left">
-        <div class="hero-tag-row">
-          <div id="ppdBadge" class="hero-tag">
-            <div class="hero-tag-dot"></div>
-            Patient-based
-          </div>
-        </div>
-        <div class="hero-greet" id="ppdName">—</div>
-        <div class="hero-sub" id="ppdMeta">—</div>
-        <div class="hero-status" id="ppdAllergyRow" style="display:none;">
-          <span class="hero-badge" style="background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.3);color:#fca5a5;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Drug Allergy: <span id="ppdAllergyText">—</span>
-          </span>
-        </div>
-      </div>
+      <div class="hero-left" id="ppdHeroLeft"><!-- JS renders mode-specific content --></div>
       <div class="hero-right">
         <div class="ptp-hero-stats">
           <div class="ptp-hero-stat">
             <div class="ptp-hero-num" id="ppdStatOrders">—</div>
-            <div class="ptp-hero-lbl">รายการยา</div>
+            <div class="ptp-hero-lbl" id="ppdStatOrdersLbl">รายการยา</div>
           </div>
           <div class="ptp-hero-divider"></div>
           <div class="ptp-hero-stat">
             <div class="ptp-hero-num" id="ppdStatDrawers">—</div>
-            <div class="ptp-hero-lbl">ลิ้นชักที่ต้องการ</div>
+            <div class="ptp-hero-lbl" id="ppdStatDrawersLbl">ลิ้นชักที่ต้องการ</div>
           </div>
         </div>
       </div>
@@ -2567,7 +2561,7 @@
             </div>
             <div style="flex:1;">
               <div id="ppdSelText" class="ppd-sel-text">—</div>
-              <div class="ppd-sel-sub">พร้อมเริ่มจัดยาผู้ป่วยรายนี้</div>
+              <div class="ppd-sel-sub" id="ppdSelSub">พร้อมเริ่มจัดยา</div>
             </div>
           </div>
         </div>
@@ -2578,7 +2572,7 @@
       <div class="dash-panel ppd-drugs-panel">
         <div class="dash-panel-header">
           <div class="dash-panel-title">
-            <div class="dash-panel-icon dash-panel-icon-teal">
+            <div class="dash-panel-icon dash-panel-icon-teal" id="ppdRightPanelIcon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="4"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
             </div>
             <span id="ppdDrugCountLabel">รายการยา</span>
@@ -2597,7 +2591,7 @@
         <div class="ptp-confirm-summary" id="ppdConfirmSummary">เลือกลิ้นชักและ Cassette</div>
       </div>
       <button class="ptp-confirm-btn" id="ppdStartBtn" disabled onclick="confirmPrepDrawer()">
-        เริ่มจัดยาผู้ป่วยรายนี้
+        <span id="ppdStartBtnLabel">เริ่มจัดยา</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </button>
     </div>
@@ -2672,6 +2666,9 @@
       </button>
     </div>
 
+    <!-- Mode context banner: patient banner (patient mode) / hidden (drug mode) -->
+    <div id="scanModeCtxBanner" style="display:none;"></div>
+
     <!-- Current drug being scanned -->
     <div class="scan-current-card">
       <div class="scan-current-top">
@@ -2718,18 +2715,58 @@
 
     <!-- Success card (shown when all items scanned) -->
     <div class="scan-success-card" id="scanSuccessCard" hidden>
-      <div class="scan-success-badge">
+      <div class="scan-success-badge" id="scanSuccessBadge">
         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>
       </div>
-      <div class="scan-success-title">จัดยาสำเร็จ</div>
+      <div class="scan-success-title" id="scanSuccessTitle">ตรวจสอบ 5 Rights ก่อนยืนยัน</div>
       <div class="scan-success-sub" id="scanSuccessSub">—</div>
+
+      <!-- 5 Rights checklist -->
+      <div class="scan-rights-list" id="scanRightsList">
+        <label class="scan-right-item">
+          <input type="checkbox" class="scan-right-cb" data-right="patient" onchange="_updateRightsState()">
+          <div class="scan-right-text">
+            <div class="scan-right-label">Right Patient · ผู้ป่วยถูกคน</div>
+            <div class="scan-right-detail" id="scanRightPatient">—</div>
+          </div>
+        </label>
+        <label class="scan-right-item">
+          <input type="checkbox" class="scan-right-cb" data-right="drug" onchange="_updateRightsState()">
+          <div class="scan-right-text">
+            <div class="scan-right-label">Right Drug · ยาถูกตัว</div>
+            <div class="scan-right-detail" id="scanRightDrug">—</div>
+          </div>
+        </label>
+        <label class="scan-right-item">
+          <input type="checkbox" class="scan-right-cb" data-right="dose" onchange="_updateRightsState()">
+          <div class="scan-right-text">
+            <div class="scan-right-label">Right Dose · ขนาดยาถูกต้อง</div>
+            <div class="scan-right-detail" id="scanRightDose">—</div>
+          </div>
+        </label>
+        <label class="scan-right-item">
+          <input type="checkbox" class="scan-right-cb" data-right="route" onchange="_updateRightsState()">
+          <div class="scan-right-text">
+            <div class="scan-right-label">Right Route · ทางการให้ยาถูกต้อง</div>
+            <div class="scan-right-detail" id="scanRightRoute">—</div>
+          </div>
+        </label>
+        <label class="scan-right-item">
+          <input type="checkbox" class="scan-right-cb" data-right="time" onchange="_updateRightsState()">
+          <div class="scan-right-text">
+            <div class="scan-right-label">Right Time · เวลาให้ยาถูกต้อง</div>
+            <div class="scan-right-detail" id="scanRightTime">—</div>
+          </div>
+        </label>
+      </div>
+
       <div class="scan-success-actions">
-        <button class="scan-success-btn scan-success-btn-secondary" onclick="finishScanGoDashboard()">
+        <button class="scan-success-btn scan-success-btn-secondary" id="scanSuccessBtnDash" disabled onclick="finishScanGoDashboard()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
           ไป Dashboard
         </button>
-        <button class="scan-success-btn scan-success-btn-primary" onclick="finishScanContinue()">
-          จัดยาต่อ
+        <button class="scan-success-btn scan-success-btn-primary" id="scanSuccessBtnNext" disabled onclick="finishScanContinue()">
+          ยืนยันและจัดยาต่อ
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>
       </div>
@@ -3601,6 +3638,17 @@
           <span>หยุด — ผู้ป่วยแพ้ยานี้ <b id="daAllergyMatch">—</b></span>
         </div>
 
+        <!-- Dual-nurse override badge (shown when dispensing out-of-round) -->
+        <div class="da-dn-badge" id="daDnBadge" hidden>
+          <div class="da-dn-badge-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="da-dn-badge-text">
+            <div class="da-dn-badge-title">ยืนยันโดยพยาบาล 2 คน · จ่ายยาล่าช้า (เลยรอบกำหนด)</div>
+            <div class="da-dn-badge-sub" id="daDnBadgeNurses">—</div>
+          </div>
+        </div>
+
         <!-- ── Step A: Drawer location(s) + Unlock (shown before scanning) ── -->
         <div class="da-loc-card" id="daLocCard">
           <div class="da-loc-head">
@@ -3975,6 +4023,11 @@
   window.addEventListener('hashchange', () => {
     if (typeof saveNavState === 'function') saveNavState();
     render(location.hash);
+  });
+  // Persist on refresh / tab close — covers the case where user mutates state
+  // (assign drug, dispense) but doesn't navigate before refreshing.
+  window.addEventListener('beforeunload', () => {
+    if (typeof saveNavState === 'function') saveNavState();
   });
   render(location.hash || '#pg-cart');
 </script>
