@@ -5282,7 +5282,7 @@ function showToast(msg) {
 let selectedPrepType = null;
 let selectedPrepRound = null;
 
-const _PTP_TYPE_LABELS  = { patient: 'จัดยาตามผู้ป่วย', medication: 'จัดยาสามัญ' };
+const _PTP_TYPE_LABELS  = { patient: 'จัดยาตามผู้ป่วย', medication: 'จัดยาตามรอบ' };
 const _PTP_ROUND_LABELS = { all: 'ทุกรอบเวลา', morning: 'รอบเช้า', noon: 'รอบเที่ยง', evening: 'รอบเย็น', bedtime: 'ก่อนนอน' };
 
 function selectPrepType(type) {
@@ -5353,7 +5353,7 @@ function _ptpUpdateConfirmBar() {
     if (!selectedPrepType) {
       summary.textContent = 'เลือกประเภทและรอบเวลา';
     } else if (isMedication) {
-      summary.textContent = 'จัดยาสามัญ · จัดยาสำรองในรถ';
+      summary.textContent = 'จัดยาตามรอบ · เลือกรอบเพื่อเริ่ม';
     } else if (!selectedPrepRound) {
       summary.textContent = _PTP_TYPE_LABELS[selectedPrepType] + ' · เลือกรอบเวลา';
     } else {
@@ -5417,6 +5417,13 @@ function initPrepType() {
 /* ── pg-prep-work ─────────────────────────────────────────── */
 const _PPW_ROUND_MAP = { morning:'เช้า', noon:'กลางวัน', evening:'เย็น', bedtime:'ก่อนนอน' };
 var _PPW_DONE_SET = new Set();
+// Done key includes the prep round so prepping morning doesn't mark evening as done.
+function _ppwDoneKey(type, id) {
+  var roundKey = (selectedPrepRound && selectedPrepRound !== 'all')
+    ? (_PPW_ROUND_MAP[selectedPrepRound] || selectedPrepRound)
+    : 'all';
+  return type + ':' + id + ':' + roundKey;
+}
 var _PPW_DETAIL = { type: null, id: null, orderIds: [] };
 // Per-session drug → cassette assignment (e.g., {'MET500': {drawerId:'D1', slot:1}})
 var _PPW_DRUG_ASSIGN = {};
@@ -5508,7 +5515,7 @@ function renderPrepWorkPage() {
       }).join('');
       var svgPatient = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-1a6 6 0 0 1 12 0v1"/></svg>';
       var svgDone    = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>';
-      var isDone = _PPW_DONE_SET.has('patient:' + pid);
+      var isDone = _PPW_DONE_SET.has(_ppwDoneKey('patient', pid));
       var doneClass = isDone ? ' ppw-row-done' : '';
       var orderIds = oList.map(function(o) { return o.id; }).join(',');
       return '<div class="ppw-row' + doneClass + '" onclick="openPrepDetail(\'patient\',\'' + pid + '\',\'' + orderIds + '\')">'
@@ -5523,7 +5530,7 @@ function renderPrepWorkPage() {
     }).join('') + '</div>';
 
   } else if (type === 'medication') {
-    // จัดยาสามัญ — group orders by drug
+    // จัดยาตามรอบ — group orders by drug within the selected round
     var groups = {};
     orders.forEach(function(o) {
       if (!groups[o.drugId]) groups[o.drugId] = [];
@@ -5536,10 +5543,10 @@ function renderPrepWorkPage() {
     set('ppwStatALbl', 'ชนิดยา');
     set('ppwStatB',    uniquePatients);
     set('ppwStatBLbl', 'ผู้ป่วย');
-    set('ppwPanelTitle', 'จัดยาสามัญ (' + drugIds.length + ' ชนิด)');
+    set('ppwPanelTitle', 'จัดยาตามรอบ (' + drugIds.length + ' ชนิด)');
 
     if (!drugIds.length) {
-      listEl.innerHTML = '<div class="ppw-empty">ไม่มีรายการยาสามัญ</div>';
+      listEl.innerHTML = '<div class="ppw-empty">ไม่มีรายการยาในรอบนี้</div>';
       return;
     }
 
@@ -5548,20 +5555,25 @@ function renderPrepWorkPage() {
     var svgDoneDrug = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>';
 
     listEl.innerHTML = '<div class="ppw-list">' + drugIds.map(function(did) {
-      var d     = drugMap[did] || { name: did, dose: '', type: 'oral' };
-      var oList = groups[did];
-      var typeStr = d.type === 'iv' ? 'ยาฉีด/IV' : 'ยากิน';
-      var isDone  = _PPW_DONE_SET.has('drug:' + did);
+      var d        = drugMap[did] || { name: did, dose: '', type: 'oral' };
+      var oList    = groups[did];
+      var typeStr  = d.type === 'iv' ? 'ยาฉีด/IV' : 'ยากิน';
+      var isDone   = _PPW_DONE_SET.has(_ppwDoneKey('drug', did));
       var doneClass = isDone ? ' ppw-row-done' : '';
       var orderIds = oList.map(function(o) { return o.id; }).join(',');
       var drugIcon = isDone ? svgDoneDrug : (d.type === 'iv' ? svgIV : svgPill);
+      var ptCount  = (new Set(oList.map(function(o) { return o.patientId; }))).size;
+      var bagCount = oList.length;     // 1 order = 1 ซอง
+      var totalQty = oList.reduce(function(s, o) { return s + (o.qty || 1); }, 0);
+      var unit     = d.type === 'iv' ? 'ถุง' : 'เม็ด';
+
       return '<div class="ppw-row' + doneClass + '" onclick="openPrepDetail(\'drug\',\'' + did + '\',\'' + orderIds + '\')">'
         + '<div class="ppw-avatar drug">' + drugIcon + '</div>'
         + '<div class="ppw-row-body">'
         +   '<div class="ppw-row-name">' + d.name + (d.dose ? ' ' + d.dose : '') + '</div>'
-        +   '<div class="ppw-row-meta">' + typeStr + '</div>'
+        +   '<div class="ppw-row-meta">' + typeStr + ' · ' + bagCount + ' ซอง · รวม ' + totalQty + ' ' + unit + ' · ' + ptCount + ' คน</div>'
         + '</div>'
-        + '<div class="ppw-badge">' + (isDone ? 'จัดแล้ว' : oList.length + ' คน') + '</div>'
+        + '<div class="ppw-badge">' + (isDone ? 'จัดแล้ว' : bagCount + ' ซอง') + '</div>'
         + '</div>';
     }).join('') + '</div>';
 
@@ -5673,7 +5685,7 @@ function _renderPrepDrawerPage() {
 
     // Right panel: pill icon (showing drug list)
     var rpIcon = document.getElementById('ppdRightPanelIcon');
-    if (rpIcon) { rpIcon.className = 'dash-panel-icon dash-panel-icon-indigo'; rpIcon.innerHTML = svgPillIcon; }
+    if (rpIcon) { rpIcon.className = 'dash-panel-icon dash-panel-icon-teal'; rpIcon.innerHTML = svgPillIcon; }
 
   } else {
     // ─── Drug mode hero ───
@@ -5763,7 +5775,10 @@ function _renderPpdDrugList(orders, drugMap) {
       var drug  = drugMap[o.drugId] || { name: o.drugId, dose: '', type: 'oral' };
       var color = drug.type === 'iv' ? '#0D9488' : drugColors[i % drugColors.length];
       var bg    = drug.type === 'iv' ? 'linear-gradient(135deg,#F0FDFA,#CCFBF1)' : drugBg[i % drugBg.length];
-      var rounds = (o.rounds || []).join(', ') || '—';
+      var prepRoundTh = (selectedPrepRound && selectedPrepRound !== 'all')
+        ? (_PPW_ROUND_MAP[selectedPrepRound] || null) : null;
+      var roundList = (o.rounds || []).filter(function(r) { return !prepRoundTh || r === prepRoundTh; });
+      var rounds = roundList.join(', ') || '—';
       var route  = drug.type === 'iv' ? 'IV' : 'PO';
 
       html += '<div class="ppd-drug-item" style="background:rgba(255,255,255,0.72);border:1px solid rgba(0,0,0,0.06);border-left:3px solid ' + color + ';border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:6px;">'
@@ -5914,24 +5929,43 @@ function _renderPpdCassetteArea(cassettes, neededDrugIds) {
 
   var svgDone = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
 
+  // Both modes are per-round unit-dose now — block cassettes loaded for a different round.
+  var currentRoundTh = (selectedPrepRound && selectedPrepRound !== 'all')
+    ? (_PPW_ROUND_MAP[selectedPrepRound] || null) : null;
+
   var html = '';
   for (var i = 1; i <= maxSlots; i++) {
     var slotNum    = i;
     var isSelected = _PPD_SELECTED_CASSETTE === i;
     var isDone     = _PPD_DONE_CASSETTES.has(_PPD_SELECTED_DRAWER + ':' + i);
+    var slotCass   = drawerCass.find(function(c) { return c.slotNumber === slotNum; });
+    var isLockedRound = !isDone
+      && slotCass && slotCass.round && currentRoundTh
+      && slotCass.round !== currentRoundTh
+      && (slotCass.quantity || 0) > 0;
 
     var cls = 'ppd-cass-slot'
-      + (isDone     ? ' done'     : '')
-      + (isSelected && !isDone ? ' selected' : '');
+      + (isDone        ? ' done'         : '')
+      + (isLockedRound ? ' locked-round' : '')
+      + (isSelected && !isDone && !isLockedRound ? ' selected' : '');
 
-    var inner = isDone
-      ? '<div class="ppd-cass-done-icon">' + svgDone + '</div>'
+    var inner;
+    if (isDone) {
+      inner = '<div class="ppd-cass-done-icon">' + svgDone + '</div>'
         + '<div class="ppd-cass-num">' + i + '</div>'
-        + '<div class="ppd-cass-done-label">จัดยาแล้ว</div>'
-      : '<div class="ppd-cass-check">' + svgCheck + '</div>'
+        + '<div class="ppd-cass-done-label">จัดยาแล้ว</div>';
+    } else if (isLockedRound) {
+      inner = '<div class="ppd-cass-locked-icon">'
+        + '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
+        + '</div>'
+        + '<div class="ppd-cass-num">' + i + '</div>'
+        + '<div class="ppd-cass-done-label">รอบ' + slotCass.round + '</div>';
+    } else {
+      inner = '<div class="ppd-cass-check">' + svgCheck + '</div>'
         + '<div class="ppd-cass-num">' + i + '</div>';
+    }
 
-    var clickAttr = isDone ? '' : ' onclick="selectPpdCassette(this,' + i + ')"';
+    var clickAttr = (isDone || isLockedRound) ? '' : ' onclick="selectPpdCassette(this,' + i + ')"';
     html += '<div class="' + cls + '"' + clickAttr + '>' + inner + '</div>';
   }
 
@@ -6016,8 +6050,21 @@ function confirmPrepDrawer() {
 // can each be scanned independently.
 function _scanItemKey(item) {
   if (!item || item.noCassette || !item.drawerId) return null;
-  var drugId = (item.drug && item.drug.id) || '';
-  return item.drawerId + ':' + item.slot + ':' + drugId;
+  var drugId    = (item.drug && item.drug.id) || '';
+  var patientId = item.patientId || '';
+  return item.drawerId + ':' + item.slot + ':' + drugId + ':' + patientId;
+}
+
+// Last queue item whose key is in _scanDoneSet — i.e. the drug just scanned.
+// Walking backward matters when later queue entries are pendingPick placeholders
+// for drugs not yet scanned (the array tail isn't always the most recent scan).
+function _lastScannedItem() {
+  for (var i = _scanQueue.length - 1; i >= 0; i--) {
+    var it = _scanQueue[i];
+    var k  = _scanItemKey(it);
+    if (k && _scanDoneSet.has(k)) return it;
+  }
+  return null;
 }
 var _scanQueue   = [];  // [{ drawerId, slot, drug }]
 var _scanIndex   = 0;
@@ -6038,65 +6085,92 @@ function initScanDrug() {
   var drugMap = {};
   DRUG_LIST.forEach(function(d) { drugMap[d.id] = d; });
 
-  // Build queue: all cassettes containing needed drugs
+  // Build queue. Both modes scan one BAG at a time — a bag is a (patient × drug × round) tuple.
+  //   Patient mode: queue iterates the patient's drugs (1 entry per drug for that patient).
+  //   Drug mode:    queue iterates the drug's patients (1 entry per order = 1 sub-bag per patient).
   var orderIds = _PPW_DETAIL.orderIds || [];
   var orders   = (MC_STATE.orders || []).filter(function(o) { return orderIds.indexOf(o.id) !== -1; });
-  var neededDrugIds = [];
-  orders.forEach(function(o) {
-    if (neededDrugIds.indexOf(o.drugId) === -1) neededDrugIds.push(o.drugId);
-  });
+  var mode     = _PPW_DETAIL.type;
 
   var cassettes = MC_STATE.cassettes || [];
   _scanQueue = [];
-  _scanDoneSet = new Set(); // reset each time page loads
+  _scanDoneSet = new Set();
 
-  // Per-session, one drug at a time:
-  //   - drugs in _PPW_DRUG_DONE are already scanned (show ✓)
-  //   - drugs in _PPW_DRUG_ASSIGN keep their previously chosen cassette
-  //   - the FIRST undone drug gets the cassette user just picked in pg-prep-drawer
-  //   - remaining undone drugs are placeholders ("รอเลือก Cassette")
-  var assignedThisRound = false;
-  neededDrugIds.forEach(function(drugId) {
-    var existing = _PPW_DRUG_ASSIGN[drugId];
-    if (existing) {
+  if (mode === 'drug') {
+    // ── Drug mode: 1 queue entry per order = 1 sub-bag per patient ──
+    // All bags of this drug go into the cassette user picked. No mid-flow re-pick.
+    orders.forEach(function(o) {
       _scanQueue.push({
-        drawerId: existing.drawerId,
-        slot:     existing.slot,
-        drug:     drugMap[drugId] || { name: drugId, dose: '', type: 'oral' },
-        noCassette: false
+        drawerId:  _PPD_SELECTED_DRAWER,
+        slot:      _PPD_SELECTED_CASSETTE,
+        drug:      drugMap[o.drugId] || { name: o.drugId, dose: '', type: 'oral' },
+        patientId: o.patientId,
+        orderId:   o.id,
+        orderQty:  o.qty || 1,
+        noCassette: !_PPD_SELECTED_DRAWER || !_PPD_SELECTED_CASSETTE
       });
-      // Restore done state for already-scanned drugs
-      if (_PPW_DRUG_DONE.has(drugId)) {
-        _scanDoneSet.add(_scanItemKey(_scanQueue[_scanQueue.length - 1]));
-      }
-      return;
-    }
-
-    // No existing assignment — give this drug the cassette user just picked (only first undone).
-    if (!assignedThisRound && _PPD_SELECTED_DRAWER && _PPD_SELECTED_CASSETTE) {
-      _PPW_DRUG_ASSIGN[drugId] = {
-        drawerId: _PPD_SELECTED_DRAWER,
-        slot:     _PPD_SELECTED_CASSETTE
-      };
-      _scanQueue.push({
-        drawerId: _PPD_SELECTED_DRAWER,
-        slot:     _PPD_SELECTED_CASSETTE,
-        drug:     drugMap[drugId] || { name: drugId, dose: '', type: 'oral' },
-        noCassette: false
-      });
-      assignedThisRound = true;
-      return;
-    }
-
-    // Placeholder: undone drug awaiting cassette pick from pg-prep-drawer.
-    _scanQueue.push({
-      drawerId: null,
-      slot:     null,
-      drug:     drugMap[drugId] || { name: drugId, dose: '', type: 'oral' },
-      noCassette: true,
-      pendingPick: true
     });
-  });
+  } else {
+    // ── Patient mode: 1 queue entry per drug needed by this patient ──
+    var neededDrugIds = [];
+    orders.forEach(function(o) {
+      if (neededDrugIds.indexOf(o.drugId) === -1) neededDrugIds.push(o.drugId);
+    });
+
+    var assignedThisRound = false;
+    neededDrugIds.forEach(function(drugId) {
+      // Find this patient's order for this drug to capture qty
+      var ord = orders.find(function(o) { return o.drugId === drugId; });
+      var orderQty = (ord && ord.qty) || 1;
+      var orderId  = (ord && ord.id);
+
+      var existing = _PPW_DRUG_ASSIGN[drugId];
+      if (existing) {
+        _scanQueue.push({
+          drawerId:  existing.drawerId,
+          slot:      existing.slot,
+          drug:      drugMap[drugId] || { name: drugId, dose: '', type: 'oral' },
+          patientId: _PPW_DETAIL.id,
+          orderId:   orderId,
+          orderQty:  orderQty,
+          noCassette: false
+        });
+        if (_PPW_DRUG_DONE.has(drugId)) {
+          _scanDoneSet.add(_scanItemKey(_scanQueue[_scanQueue.length - 1]));
+        }
+        return;
+      }
+
+      if (!assignedThisRound && _PPD_SELECTED_DRAWER && _PPD_SELECTED_CASSETTE) {
+        _PPW_DRUG_ASSIGN[drugId] = {
+          drawerId: _PPD_SELECTED_DRAWER,
+          slot:     _PPD_SELECTED_CASSETTE
+        };
+        _scanQueue.push({
+          drawerId:  _PPD_SELECTED_DRAWER,
+          slot:      _PPD_SELECTED_CASSETTE,
+          drug:      drugMap[drugId] || { name: drugId, dose: '', type: 'oral' },
+          patientId: _PPW_DETAIL.id,
+          orderId:   orderId,
+          orderQty:  orderQty,
+          noCassette: false
+        });
+        assignedThisRound = true;
+        return;
+      }
+
+      _scanQueue.push({
+        drawerId:  null,
+        slot:      null,
+        drug:      drugMap[drugId] || { name: drugId, dose: '', type: 'oral' },
+        patientId: _PPW_DETAIL.id,
+        orderId:   orderId,
+        orderQty:  orderQty,
+        noCassette: true,
+        pendingPick: true
+      });
+    });
+  }
 
   // Start from first item that is assigned a cassette and not yet scanned.
   // (skip done items AND pending-pick placeholders)
@@ -6125,31 +6199,47 @@ function _renderScanModeBanner() {
   var el = document.getElementById('scanModeCtxBanner');
   if (!el) return;
   var type = _PPW_DETAIL && _PPW_DETAIL.type;
-  if (type !== 'patient') { el.style.display = 'none'; el.innerHTML = ''; return; }
+  if (type !== 'patient' && type !== 'drug') { el.style.display = 'none'; el.innerHTML = ''; return; }
 
   var ptMap = {};
   (MC_STATE.patients || []).forEach(function(p) { ptMap[p.id] = p; });
-  var pt = ptMap[_PPW_DETAIL.id] || { name: _PPW_DETAIL.id, bed: '—', ward: '—' };
-  var init = pt.name ? (pt.name.match(/[ก-๙a-zA-Z]/) ? pt.name.match(/[ก-๙a-zA-Z]/)[0] : pt.name.charAt(0)) : '?';
 
   var doneCount = _scanDoneSet.size;
   var total = _scanQueue.length;
   var pct = total > 0 ? Math.round(doneCount / total * 100) : 0;
   var allDone = doneCount >= total && total > 0;
 
+  // In drug mode the banner reflects the patient whose ซอง is currently being scanned.
+  var pt;
+  var eyebrow;
+  var numLbl;
+  if (type === 'patient') {
+    pt = ptMap[_PPW_DETAIL.id] || { name: _PPW_DETAIL.id, bed: '—', ward: '—' };
+    eyebrow = 'จัดยาสำหรับผู้ป่วย';
+    numLbl  = 'รายการ';
+  } else {
+    var curItem = _scanQueue[_scanIndex];
+    var curPid  = curItem && curItem.patientId;
+    pt = (curPid && ptMap[curPid])
+      || (allDone ? { name: 'จัดครบทุกซองแล้ว', bed: '—', ward: '—' } : { name: '—', bed: '—', ward: '—' });
+    eyebrow = allDone ? 'จัดครบ' : 'กำลังจัดซองของ';
+    numLbl  = 'ซอง';
+  }
+  var init = pt.name ? (pt.name.match(/[ก-๙a-zA-Z]/) ? pt.name.match(/[ก-๙a-zA-Z]/)[0] : pt.name.charAt(0)) : '?';
+
   el.innerHTML =
     '<div class="scan-pt-ctx-banner' + (allDone ? ' all-done' : '') + '">'
     + '<div class="scan-pt-ctx-left">'
     +   '<div class="scan-pt-ctx-avatar">' + init + '</div>'
     +   '<div class="scan-pt-ctx-info">'
-    +     '<div class="scan-pt-ctx-eyebrow">จัดยาสำหรับผู้ป่วย</div>'
-    +     '<div class="scan-pt-ctx-name">' + (pt.name || _PPW_DETAIL.id) + '</div>'
-    +     '<div class="scan-pt-ctx-sub">' + (pt.ward || '') + (pt.bed ? ' · เตียง ' + pt.bed : '') + '</div>'
+    +     '<div class="scan-pt-ctx-eyebrow">' + eyebrow + '</div>'
+    +     '<div class="scan-pt-ctx-name">' + (pt.name || '—') + '</div>'
+    +     '<div class="scan-pt-ctx-sub">' + (pt.ward || '') + (pt.bed && pt.bed !== '—' ? ' · เตียง ' + pt.bed : '') + '</div>'
     +   '</div>'
     + '</div>'
     + '<div class="scan-pt-ctx-right">'
     +   '<div class="scan-pt-ctx-num">' + doneCount + '<span class="scan-pt-ctx-total">/' + total + '</span></div>'
-    +   '<div class="scan-pt-ctx-num-lbl">รายการ</div>'
+    +   '<div class="scan-pt-ctx-num-lbl">' + numLbl + '</div>'
     +   '<div class="scan-pt-ctx-prog"><div style="width:' + pct + '%;"></div></div>'
     + '</div>'
     + '</div>';
@@ -6199,8 +6289,9 @@ function _renderScanCurrent() {
     if (successCard) successCard.hidden = false;
     if (confirmBar)  confirmBar.style.display = 'none';
 
-    // Build success summary text — mode-aware
-    var lastItem = _scanQueue[_scanQueue.length - 1] || null;
+    // Build success summary text — mode-aware.
+    // Use _lastScannedItem so pendingPick placeholders at the tail don't masquerade as the just-scanned drug.
+    var lastItem = _lastScannedItem() || _scanQueue[_scanQueue.length - 1] || null;
     var subEl    = document.getElementById('scanSuccessSub');
     var titleEl  = document.getElementById('scanSuccessTitle');
     var badgeEl  = document.getElementById('scanSuccessBadge');
@@ -6337,6 +6428,30 @@ function _renderScanCurrent() {
   if (locD)    locD.textContent    = item.noCassette ? '—' : 'ลิ้นชัก ' + item.drawerId.replace('D','');
   if (locC)    locC.textContent    = item.noCassette ? 'ไม่มีในรถ' : 'Cassette ' + item.slot;
 
+  // Bag context — make it explicit which ซอง this scan creates (whose, which round, how many).
+  var bagCtx = document.getElementById('scanBagContext');
+  if (bagCtx) {
+    var ptMapBC = {};
+    (MC_STATE.patients || []).forEach(function(p) { ptMapBC[p.id] = p; });
+    var ptBC    = item.patientId ? ptMapBC[item.patientId] : null;
+    var roundTh = (selectedPrepRound && selectedPrepRound !== 'all')
+      ? (_PPW_ROUND_MAP[selectedPrepRound] || selectedPrepRound) : 'ทุกรอบ';
+    var unitBC  = item.drug.type === 'iv' ? 'ถุง' : 'เม็ด';
+    var qtyBC   = item.orderQty || 1;
+    if (ptBC || _PPW_DETAIL.type === 'patient') {
+      var name = ptBC ? ptBC.name : '—';
+      var bed  = ptBC && ptBC.bed ? ' · เตียง ' + ptBC.bed : '';
+      bagCtx.innerHTML =
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>'
+        + '<span class="scan-bag-ctx-text">ซองของ <strong>' + name + '</strong>' + bed + '</span>'
+        + '<span class="scan-bag-ctx-chip scan-bag-ctx-round">รอบ' + roundTh + '</span>'
+        + '<span class="scan-bag-ctx-chip scan-bag-ctx-qty">' + qtyBC + ' ' + unitBC + '</span>';
+      bagCtx.style.display = '';
+    } else {
+      bagCtx.style.display = 'none';
+    }
+  }
+
   _renderScanPatients(item);
 
   if (item.noCassette) {
@@ -6417,22 +6532,30 @@ function _renderScanQueue() {
     });
 
   } else {
-    // ─── Drug mode: remaining queue (usually empty for single-drug prep) ───
+    // ─── Drug mode: queue = 1 ซอง per patient. Show patient name on each row. ───
+    var ptMap = {};
+    (MC_STATE.patients || []).forEach(function(p) { ptMap[p.id] = p; });
+    html += '<div class="scan-ql-head">รายการซองที่ต้องจัด</div>';
     _scanQueue.forEach(function(item, i) {
-      if (i === _scanIndex) return;
-      var key   = _scanItemKey(item);
-      var done  = key && _scanDoneSet.has(key);
-      var icon  = item.noCassette ? svgWarn : (done ? svgCheck : svgPill);
-      var loc   = item.noCassette ? 'ไม่มีใน Cassette' : ('ลิ้นชัก ' + item.drawerId.replace('D','') + ' · Cassette ' + item.slot);
-      var statusTxt = item.noCassette ? 'ไม่มีในรถ' : (done ? 'แสกนแล้ว' : 'รอ');
-      var extraStyle = item.noCassette ? ' style="border-color:#f59e0b;background:#fffbeb;opacity:1;"' : '';
-      html += '<div class="scan-queue-item' + (done ? ' done' : '') + '"' + extraStyle + '>'
-        + '<div class="scan-queue-icon">' + icon + '</div>'
-        + '<div style="flex:1;min-width:0;">'
-        +   '<div class="scan-queue-name">' + item.drug.name + (item.drug.dose ? ' ' + item.drug.dose : '') + '</div>'
-        +   '<div class="scan-queue-loc">' + loc + '</div>'
+      var key      = _scanItemKey(item);
+      var done     = key && _scanDoneSet.has(key);
+      var isCurr   = (i === _scanIndex);
+      var pt       = ptMap[item.patientId] || { name: item.patientId || '—', bed: '—' };
+      var stateClass = item.noCassette ? ' ql-warn' : (done ? ' ql-done' : (isCurr ? ' ql-active' : ''));
+      var iconHtml = item.noCassette ? svgWarn
+                   : (done ? svgCheck
+                   : (isCurr ? svgPill : '<span class="scan-ql-dot"></span>'));
+      var badge = item.noCassette ? '<span class="scan-ql-badge warn">ไม่มีในรถ</span>'
+                : (done ? '<span class="scan-ql-badge done">แสกนแล้ว</span>'
+                : (isCurr ? '<span class="scan-ql-badge active">กำลังแสกน</span>'
+                : '<span class="scan-ql-badge">รอ</span>'));
+      html += '<div class="scan-ql-item' + stateClass + '">'
+        + '<div class="scan-ql-icon">' + iconHtml + '</div>'
+        + '<div class="scan-ql-info">'
+        +   '<div class="scan-ql-name">' + pt.name + '</div>'
+        +   '<div class="scan-ql-loc">เตียง ' + (pt.bed || '—') + ' · ×' + (item.orderQty || 1) + '</div>'
         + '</div>'
-        + '<div class="scan-queue-status" style="' + (item.noCassette ? 'background:#fef3c7;color:#b45309;' : '') + '">' + statusTxt + '</div>'
+        + badge
         + '</div>';
     });
   }
@@ -6586,36 +6709,58 @@ function simulateScan() {
   _PPD_DONE_CASSETTES.add(cassKey);
   if (item.drug && item.drug.id) _PPW_DRUG_DONE.add(item.drug.id);
 
-  // Load the scanned drug into the cassette so dispense flow can find it.
-  // - Empty cassette: set drugId, init quantity from drug.max (or qty needed)
-  // - Existing cassette with same drug: top up to drug.max (refill behavior)
+  // Each scan = 1 ซอง (sub-bag) for (patientId × drugId × round). The cassette holds
+  // a list of bags, and `quantity` is just the sum of bag.qty.
   var cass = (MC_STATE.cassettes || []).find(function(c) {
     return c.drawerId === item.drawerId && c.slotNumber === item.slot;
   });
-  console.log('[DEBUG simulateScan] cass found:', cass, 'item.drug:', item.drug);
   if (cass && item.drug && item.drug.id) {
+    var roundTh = (selectedPrepRound && selectedPrepRound !== 'all')
+      ? (_PPW_ROUND_MAP[selectedPrepRound] || null) : 'all';
+
+    // Defensive guard — UI should already block a round-mismatched cassette.
+    if (cass.round && cass.round !== 'all' && roundTh && roundTh !== 'all'
+        && cass.round !== roundTh && (cass.quantity || 0) > 0) {
+      console.warn('[simulateScan] cassette round mismatch — blocked', cass.round, '!=', roundTh);
+      return;
+    }
+
     var drugDef = (typeof getDrug === 'function') ? getDrug(item.drug.id) : null;
     var maxQty  = (drugDef && drugDef.max) || cass.maxQty || 30;
+    var bagQty  = item.orderQty || 1;
+
+    // Track primary/co drugs for dispense lookup
     if (!cass.drugId) {
-      cass.drugId   = item.drug.id;
-      cass.maxQty   = maxQty;
-      cass.quantity = maxQty;       // fresh load — fill to capacity
-    } else if (cass.drugId === item.drug.id) {
-      cass.quantity = Math.min(maxQty, (cass.quantity || 0) + maxQty);  // refill top-up
+      cass.drugId  = item.drug.id;
+      cass.maxQty  = maxQty;
+      if (roundTh) cass.round = roundTh;
+    } else if (cass.drugId !== item.drug.id) {
+      if (!cass.coDrugIds) cass.coDrugIds = [];
+      if (cass.coDrugIds.indexOf(item.drug.id) === -1) cass.coDrugIds.push(item.drug.id);
     }
-    cass.status        = 'IN';
-    cass.removedAt     = null;
-    cass.lastRefillAt  = Date.now();
+
+    // Append this scan as a new bag
+    if (!cass.bags) cass.bags = [];
+    cass.bags.push({
+      patientId: item.patientId || null,
+      drugId:    item.drug.id,
+      qty:       bagQty,
+      round:     roundTh || 'all',
+      orderId:   item.orderId || null
+    });
+    cass.quantity     = cass.bags.reduce(function(s, b) { return s + (b.qty || 0); }, 0);
+    cass.status       = 'IN';
+    cass.removedAt    = null;
+    cass.lastRefillAt = Date.now();
+
     if (typeof addAudit === 'function') {
-      try { addAudit('REFILLED', cass.id, { added: cass.quantity }); } catch (e) {}
+      try { addAudit('REFILLED', cass.id, { added: bagQty }); } catch (e) {}
     }
-    // Track in session for dashboard "เติมแล้ว" indicator
     if (!MC_STATE.session.refilledCassettes) MC_STATE.session.refilledCassettes = [];
     if (!MC_STATE.session.refilledCassettes.includes(cass.id)) {
       MC_STATE.session.refilledCassettes.push(cass.id);
     }
     if (typeof recomputePausedOrders === 'function') recomputePausedOrders();
-    console.log('[DEBUG simulateScan] LOADED', cass.id, 'with drugId:', cass.drugId, 'qty:', cass.quantity);
   }
 
   var area    = document.getElementById('scanArea');
@@ -6646,7 +6791,7 @@ function simulateScan() {
 function confirmScan() {
   var type = _PPW_DETAIL.type;
   var id   = _PPW_DETAIL.id;
-  if (type && id) _PPW_DONE_SET.add(type + ':' + id);
+  if (type && id) _PPW_DONE_SET.add(_ppwDoneKey(type, id));
   _scanDoneSet = new Set();
   _PREP_2ND_WITNESSED = new Set();
   location.hash = '#pg-prep-work';
@@ -6744,7 +6889,7 @@ function _closePrepWitnessModal(e) {
 function finishScanContinue() {
   var type = _PPW_DETAIL.type;
   var id   = _PPW_DETAIL.id;
-  if (type && id) _PPW_DONE_SET.add(type + ':' + id);
+  if (type && id) _PPW_DONE_SET.add(_ppwDoneKey(type, id));
   _scanDoneSet = new Set();
   _PPW_DRUG_ASSIGN = {};
   _PPW_DRUG_DONE   = new Set();
@@ -6755,7 +6900,7 @@ function finishScanContinue() {
 function finishScanGoDashboard() {
   var type = _PPW_DETAIL.type;
   var id   = _PPW_DETAIL.id;
-  if (type && id) _PPW_DONE_SET.add(type + ':' + id);
+  if (type && id) _PPW_DONE_SET.add(_ppwDoneKey(type, id));
   _scanDoneSet = new Set();
   _PPW_DRUG_ASSIGN = {};
   _PPW_DRUG_DONE   = new Set();
@@ -6794,7 +6939,7 @@ function finishScanSameCassette() {
 
 /* ─── 5 Rights check (inline at end of scan flow) ────────── */
 function _populateRightsDetails() {
-  var lastItem  = _scanQueue[_scanQueue.length - 1] || null;
+  var lastItem  = _lastScannedItem() || _scanQueue[_scanQueue.length - 1] || null;
   var orderIds  = (_PPW_DETAIL && _PPW_DETAIL.orderIds) || [];
   var allOrders = (MC_STATE.orders || []).filter(function(o) { return orderIds.indexOf(o.id) !== -1; });
   var pMap = {};
@@ -6817,12 +6962,22 @@ function _populateRightsDetails() {
     }).join(', ') + (pats.size > 3 ? '…' : '');
   }
 
-  // Time/round
+  // Right Dose/Time describe the drug just scanned, not the whole patient queue.
+  // Both prep modes are per-round unit-dose, so restrict to the round being prepped.
+  var drugId = drug && drug.id;
+  var prepRoundTh = (typeof selectedPrepRound !== 'undefined' && selectedPrepRound && selectedPrepRound !== 'all')
+    ? (_PPW_ROUND_MAP[selectedPrepRound] || null) : null;
+  var drugOrders = drugId ? allOrders.filter(function(o) { return o.drugId === drugId; }) : allOrders;
+
   var rounds = new Set();
-  allOrders.forEach(function(o) { (o.rounds || []).forEach(function(r) { rounds.add(r); }); });
+  drugOrders.forEach(function(o) {
+    (o.rounds || []).forEach(function(r) {
+      if (!prepRoundTh || r === prepRoundTh) rounds.add(r);
+    });
+  });
   var timeStr = Array.from(rounds).join(', ') || '—';
 
-  var totalQty = allOrders.reduce(function(s, o) { return s + (o.qty || 1); }, 0);
+  var totalQty = drugOrders.reduce(function(s, o) { return s + (o.qty || 1); }, 0);
   var unit = drug && drug.type === 'iv' ? 'ถุง' : 'เม็ด';
 
   var setText = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
@@ -6870,12 +7025,8 @@ function initDispenseVerify() {
   if (location.hash.replace('#','') !== 'pg-dispense-verify') return;
   seedMcData();
 
-  // Auto-detect round based on time of day
-  var hr = new Date().getHours();
-  if      (hr < 10)  _DV_ROUND = 'morning';
-  else if (hr < 14)  _DV_ROUND = 'noon';
-  else if (hr < 18)  _DV_ROUND = 'evening';
-  else               _DV_ROUND = 'bedtime';
+  // _DV_ROUND is set by drSelectRound on the rounds page; don't override with wall-clock here
+  // or the user's selection gets clobbered (e.g. picking morning while real time is evening).
 
   _renderDvRoundStrip();
   _showDvScanState();
@@ -7329,11 +7480,31 @@ function _daBuildQueue() {
     var orderQty = o.qty || 1;
 
     // Pick cassette(s) for this drug.
-    // Strategy: find one IN cassette with enough stock. Only spread across multiple
-    // cassettes if a single cassette doesn't have enough (rare in unit-dose carts).
+    // Find the cassette holding this patient's bag of this drug for this round.
+    // A cassette qualifies if it has a matching bag entry (preferred) OR — for
+    // legacy cassettes without bag data — it carries the drug as primary/co-load
+    // and the round matches.
+    var hasBagFor = function(c) {
+      if (!c.bags || !c.bags.length) return false;
+      return c.bags.some(function(b) {
+        if (b.drugId !== o.drugId) return false;
+        if (b.patientId && b.patientId !== p.id) return false;
+        if (b.round && b.round !== 'all' && b.round !== roundTh) return false;
+        return true;
+      });
+    };
+    var holdsDrugLegacy = function(c) {
+      if (c.bags && c.bags.length) return false;   // skip — bag-aware logic handles it
+      var owns = c.drugId === o.drugId
+        || (c.coDrugIds && c.coDrugIds.indexOf(o.drugId) !== -1);
+      var roundOK = !c.round || c.round === 'all' || c.round === roundTh;
+      return owns && roundOK;
+    };
+    var holdsDrug = function(c) { return hasBagFor(c) || holdsDrugLegacy(c); };
+
     var inCassettes = cassettes
-      .filter(function(c) { return c.status === 'IN' && c.drugId === o.drugId && c.quantity > 0; })
-      .sort(function(a, b) { return b.quantity - a.quantity; });   // most-stocked first
+      .filter(function(c) { return c.status === 'IN' && holdsDrug(c) && c.quantity > 0; })
+      .sort(function(a, b) { return b.quantity - a.quantity; });
 
     var pickedLocs = [];
     if (inCassettes.length) {
@@ -7341,7 +7512,6 @@ function _daBuildQueue() {
       if (firstFit) {
         pickedLocs = [firstFit];        // single cassette covers the order
       } else {
-        // Spread across cassettes only when no single one has enough stock
         var need = orderQty;
         for (var i = 0; i < inCassettes.length && need > 0; i++) {
           pickedLocs.push(inCassettes[i]);
@@ -7349,8 +7519,12 @@ function _daBuildQueue() {
         }
       }
     } else {
-      // No IN cassette — fallback to any so user sees the location with "ไม่มีในรถเข็น"
-      var fallback = cassettes.find(function(c) { return c.drugId === o.drugId; });
+      // No IN cassette — fallback so user sees "ไม่มีในรถเข็น" with a sensible location
+      var fallback = cassettes.find(holdsDrug)
+                  || cassettes.find(function(c) {
+                       return c.drugId === o.drugId
+                         || (c.coDrugIds && c.coDrugIds.indexOf(o.drugId) !== -1);
+                     });
       if (fallback) pickedLocs = [fallback];
     }
 
@@ -7816,8 +7990,9 @@ function _daRenderDetail() {
   if (scanIco) scanIco.hidden = false;
   if (scanOk) scanOk.hidden = true;
   if (hint) {
+    var needsWitness = (item.isHigh || item._needsLateWitness === true) && !_DA_2ND_DONE;
     if (item.allergyMatch)              hint.textContent = 'ห้ามจ่าย — ผู้ป่วยแพ้ยานี้';
-    else if (item.scannedCount >= 1 && item.isHigh && !_DA_2ND_DONE)
+    else if (item.scannedCount >= 1 && needsWitness)
                                         hint.textContent = '✓ สแกนถุงแล้ว — รอพยาบาลคนที่ 2 ยืนยัน';
     else if (item.scannedCount >= 1)    hint.textContent = '✓ สแกนแล้ว — กดปุ่ม "จ่ายแล้ว"';
     else if (item.isHigh)               hint.textContent = 'High Alert · แตะเพื่อสแกน Barcode บนถุงยา';
@@ -7828,16 +8003,33 @@ function _daRenderDetail() {
   // 7 Rights checklist
   _daRender7Rights();
 
-  // "จ่ายแล้ว" button — must pass all 7 Rights (+ HA: 2nd nurse verified)
+  // "จ่ายแล้ว" button — must pass all 7 Rights (+ HA: 2nd nurse verified).
+  // Late-dispense override: when only Right Time fails AND nurse manually confirmed
+  // Right Route + Right Reason, allow dispense as "จ่ายล่าช้า" — but require a 2nd
+  // nurse witness scan, same as high-alert drugs.
   var rights = _da7Rights(item);
-  // Right Documentation auto-✓ AFTER we mark given — exclude from pre-gate
-  var preDocOk = rights.filter(function(r) { return r.key !== 'doc'; }).every(function(r) { return r.ok; });
-  var haOk = !item.isHigh || _DA_2ND_DONE;
-  if (btnGive) btnGive.disabled = !(preDocOk && haOk);
+  var nonDoc = rights.filter(function(r) { return r.key !== 'doc'; });
+  var allOk  = nonDoc.every(function(r) { return r.ok; });
+  var failed = nonDoc.filter(function(r) { return !r.ok; }).map(function(r) { return r.key; });
+  var lateOverride = !allOk && failed.length === 1 && failed[0] === 'time'
+                     && item.rightRouteConfirmed && item.rightReasonConfirmed;
+  item._needsLateWitness = lateOverride;
+  var preDocOk = allOk || lateOverride;
+  var needs2nd = item.isHigh || lateOverride;
+  var secondOk = !needs2nd || _DA_2ND_DONE;
+  if (btnGive) {
+    btnGive.disabled = !(preDocOk && secondOk);
+    btnGive.classList.toggle('da-btn-late', lateOverride);
+    var lblEl = document.getElementById('daBtnGiveLabel');
+    if (lblEl) lblEl.textContent = lateOverride ? 'จ่ายล่าช้า' : 'จ่ายแล้ว';
+  }
 
-  // Inline pending pill — appears only if HA bag scanned but 2nd nurse not yet verified
+  // Inline pending pill — appears whenever a 2nd witness is required but not yet done
   var pending = document.getElementById('da2ndPending');
-  if (pending) pending.hidden = !(item.isHigh && item.scannedCount >= 1 && !_DA_2ND_DONE);
+  if (pending) {
+    var needsW = item.isHigh || lateOverride;
+    pending.hidden = !(needsW && item.scannedCount >= 1 && !_DA_2ND_DONE);
+  }
 }
 
 function _daUpdateBottomBar() {
@@ -7900,9 +8092,37 @@ function daUnlockDrawer() {
   setTimeout(function() {
     if (_DA_QUEUE[_DA_INDEX] === item) {
       item.stage = 'unlocked';
+      // Each cassette has its own electronic lock. Only co-loaded drugs sharing the
+      // same cassette become accessible — drugs in other cassettes (even same drawer)
+      // stay locked until their own unlock action.
+      _daPropagateCassetteUnlock(item);
       _daRenderDetail();
+      _daRenderList();
     }
   }, 800);
+}
+
+function _daPropagateCassetteUnlock(srcItem) {
+  if (!srcItem || !srcItem.locations || !srcItem.locations.length) return;
+  var cassetteKeys = {};
+  srcItem.locations.forEach(function(L) {
+    if (!L) return;
+    if (L.cassetteId) cassetteKeys[L.cassetteId] = true;
+    if (L.drawerId && L.slot != null) cassetteKeys[L.drawerId + ':' + L.slot] = true;
+  });
+  _DA_QUEUE.forEach(function(other) {
+    if (other === srcItem) return;
+    if (other.stage !== 'locked') return;
+    if (other.status !== 'pending') return;
+    if (other.allergyMatch) return;          // allergy block stands even if cassette is open
+    var shares = (other.locations || []).some(function(L) {
+      if (!L) return false;
+      if (L.cassetteId && cassetteKeys[L.cassetteId]) return true;
+      if (L.drawerId && L.slot != null && cassetteKeys[L.drawerId + ':' + L.slot]) return true;
+      return false;
+    });
+    if (shares) other.stage = 'unlocked';
+  });
 }
 
 /* Scan: 1 bag = 1 scan. HIGH ALERT additionally requires the 2nd-nurse modal. */
@@ -7918,24 +8138,32 @@ function daSimulateScan() {
   item.stage         = 'complete';
 
   var area = document.getElementById('daScanArea');
+  var autoOpen2nd = function() {
+    // Auto-open the witness modal whenever a 2nd witness is required and bag is scanned.
+    var needsW = item.isHigh || (item._needsLateWitness === true);
+    if (needsW && !_DA_2ND_DONE) daOpen2ndModal();
+  };
   if (area) {
     area.classList.add('scanned');
     setTimeout(function() {
       if (area) area.classList.remove('scanned');
       _daRenderDetail();
-      // High alert → auto-open the 2nd-nurse badge scan modal
-      if (item.isHigh && !_DA_2ND_DONE) daOpen2ndModal();
+      autoOpen2nd();
     }, 400);
   } else {
     _daRenderDetail();
-    if (item.isHigh && !_DA_2ND_DONE) daOpen2ndModal();
+    autoOpen2nd();
   }
 }
 
 /* HIGH ALERT — open the 2nd-nurse badge scan modal */
 function daOpen2ndModal() {
   var item = _DA_QUEUE[_DA_INDEX];
-  if (!item || !item.isHigh || _DA_2ND_DONE) return;
+  if (!item || _DA_2ND_DONE) return;
+  // Two cases require a 2nd-nurse witness: high-alert drugs, and late-dispense override.
+  var isLate  = item._needsLateWitness === true;
+  var needs2nd = item.isHigh || isLate;
+  if (!needs2nd) return;
   var modal = document.getElementById('da2ndModal');
   if (!modal) return;
 
@@ -7953,6 +8181,26 @@ function daOpen2ndModal() {
   if (hint) hint.textContent = 'แตะเพื่อจำลองการสแกนบัตรพนักงาน';
   if (dn && item.drug) dn.textContent = item.drug.name + (item.drug.dose ? ' ' + item.drug.dose : '');
 
+  // Tailor the badge + body text to the reason for the 2nd witness
+  var badgeLbl = document.getElementById('da2ndBadgeLabel');
+  var subText  = document.getElementById('da2ndSubText');
+  var badge    = document.getElementById('da2ndBadge');
+  if (item.isHigh) {
+    if (badgeLbl) badgeLbl.textContent = 'HIGH ALERT';
+    if (badge)    badge.classList.remove('da-2nd-badge-late');
+    if (subText) {
+      subText.innerHTML = 'ยา <b id="da2ndDrugName">' + (item.drug ? item.drug.name + (item.drug.dose ? ' ' + item.drug.dose : '') : '—')
+        + '</b> เป็นยา High Alert<br>ให้พยาบาลคนที่ 2 สแกน Barcode บัตรพนักงานเพื่อยืนยันการให้ยา';
+    }
+  } else if (isLate) {
+    if (badgeLbl) badgeLbl.textContent = 'จ่ายล่าช้า';
+    if (badge)    badge.classList.add('da-2nd-badge-late');
+    if (subText) {
+      subText.innerHTML = 'การจ่ายยา <b id="da2ndDrugName">' + (item.drug ? item.drug.name + (item.drug.dose ? ' ' + item.drug.dose : '') : '—')
+        + '</b> เลยรอบกำหนด<br>ให้พยาบาลคนที่ 2 สแกน Barcode บัตรพนักงานยืนยันการจ่ายยาล่าช้า';
+    }
+  }
+
   modal.hidden = false;
 }
 
@@ -7961,10 +8209,12 @@ function daClose2ndModal() {
   if (modal) modal.hidden = true;
 }
 
-/* HIGH ALERT 2nd-nurse verification — scan their employee badge */
+/* 2nd-nurse witness scan — required for HIGH ALERT or late-dispense override */
 function daScan2ndNurse() {
   var item = _DA_QUEUE[_DA_INDEX];
-  if (!item || !item.isHigh) return;
+  if (!item) return;
+  var needs2nd = item.isHigh || (item._needsLateWitness === true);
+  if (!needs2nd) return;
   if (item.scannedCount < 1) return;   // bag must be scanned first
   if (_DA_2ND_DONE) return;
 
@@ -8012,18 +8262,28 @@ function daMarkGiven() {
     daShowAlert('ยังไม่ได้สแกนยา', 'กรุณาสแกน Barcode บนถุงยา 1 ครั้งก่อนกดจ่าย');
     return;
   }
-  // 7 Rights gate (excluding documentation which auto-✓ after this step)
+  // 7 Rights gate (excluding documentation which auto-✓ after this step).
+  // Late-dispense override: if only Right Time fails and nurse confirmed Route + Reason,
+  // proceed as a documented late dispense — but require 2nd-nurse witness too.
   var rights = _da7Rights(item);
   var failed = rights.filter(function(r) { return r.key !== 'doc' && !r.ok; });
-  if (failed.length) {
+  var failedKeys = failed.map(function(r) { return r.key; });
+  var lateOverrideOk = failedKeys.length === 1 && failedKeys[0] === 'time'
+                       && item.rightRouteConfirmed && item.rightReasonConfirmed;
+  if (failed.length && !lateOverrideOk) {
     daShowAlert('ยังไม่ผ่าน 7 Rights',
       'ยังขาด: <b>' + failed.map(function(r) { return r.lbl; }).join(', ') + '</b><br>กรุณาตรวจสอบและยืนยันให้ครบก่อนกดจ่ายยา');
     return;
   }
-  // High alert: also needs 2nd nurse to scan their badge
-  if (item.isHigh && !_DA_2ND_DONE) {
-    daShowAlert('ขั้นตอนไม่ครบ',
-      'ยา HIGH ALERT ต้องให้พยาบาลคนที่ 2 สแกนบัตรพนักงานยืนยันก่อน');
+  if (lateOverrideOk) item.lateDispense = true;
+  // 2nd-nurse witness — required for HIGH ALERT or late-dispense override
+  var needs2nd = item.isHigh || lateOverrideOk;
+  if (needs2nd && !_DA_2ND_DONE) {
+    item._needsLateWitness = lateOverrideOk;
+    daShowAlert('ต้องการพยานคนที่ 2',
+      lateOverrideOk
+        ? 'การจ่ายยาล่าช้า (เลยรอบกำหนด) ต้องให้พยาบาลคนที่ 2 สแกนบัตรพนักงานยืนยันก่อน'
+        : 'ยา HIGH ALERT ต้องให้พยาบาลคนที่ 2 สแกนบัตรพนักงานยืนยันก่อน');
     daOpen2ndModal();
     return;
   }
@@ -8036,19 +8296,45 @@ function daMarkGiven() {
   var u = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
   item.givenBy = (u && u.name) || MC_STATE.currentUser || 'พยาบาล';
 
-  // Decrement cassette quantity — Drawer Map reflects "drug taken out" after dispense.
-  // Spread item.qty across the picked locations (usually 1 cassette covers the dose).
+  // Pull the matching ซอง (bag) out of the cassette. Patient + drug + round must match.
+  // Legacy cassettes without bag data still fall back to bulk-decrement.
+  var roundThNow = (typeof _DV_ROUND_TH !== 'undefined' && _DV_ROUND_TH[_DV_ROUND]) || 'เช้า';
+  var pid = _DV_VERIFIED_PATIENT;
+  var did = item.drugId;
   var remainingQty = item.qty || 1;
+
   (item.locations || []).forEach(function(L) {
     if (remainingQty <= 0) return;
     var c = (MC_STATE.cassettes || []).find(function(x) { return x.id === L.cassetteId; });
     if (!c) return;
-    var take = Math.min(remainingQty, c.quantity || 0);
-    c.quantity = Math.max(0, (c.quantity || 0) - take);
-    remainingQty -= take;
-    // When emptied, clear drugId so Drawer Map shows the slot as available again.
-    if (c.quantity === 0) {
-      c.drugId = null;
+
+    if (c.bags && c.bags.length) {
+      // Remove the first bag matching (patient × drug × round)
+      var idx = c.bags.findIndex(function(b) {
+        if (b.drugId !== did) return false;
+        if (b.patientId && b.patientId !== pid) return false;
+        if (b.round && b.round !== 'all' && b.round !== roundThNow) return false;
+        return true;
+      });
+      if (idx !== -1) {
+        var bag = c.bags.splice(idx, 1)[0];
+        var take = Math.min(remainingQty, bag.qty || 1);
+        remainingQty -= take;
+      }
+      c.quantity = c.bags.reduce(function(s, b) { return s + (b.qty || 0); }, 0);
+    } else {
+      // Legacy: bulk decrement
+      var take2 = Math.min(remainingQty, c.quantity || 0);
+      c.quantity = Math.max(0, (c.quantity || 0) - take2);
+      remainingQty -= take2;
+    }
+
+    // When fully emptied, free the slot for a new round/drug.
+    if ((c.quantity || 0) === 0) {
+      c.drugId    = null;
+      c.round     = null;
+      c.coDrugIds = [];
+      c.bags      = [];
     }
   });
 

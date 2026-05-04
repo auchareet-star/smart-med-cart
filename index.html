@@ -2201,8 +2201,8 @@
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
             </div>
             <div class="ptp-mode-text">
-              <div class="ptp-mode-name">จัดยาสามัญ</div>
-              <div class="ptp-mode-desc">จัดยาสำรองที่เก็บใน Cassette ของรถ พร้อมเบิกใช้ตามความจำเป็น ไม่ผูกกับรอบเวลา</div>
+              <div class="ptp-mode-name">จัดยาตามรอบ</div>
+              <div class="ptp-mode-desc">เลือกรอบแล้วจัดยาทุกตัวในรอบนั้นเป็น batch — เหมาะกับการเตรียมยาก่อนถึงเวลาจ่าย</div>
             </div>
             <div class="ptp-mode-stats">
               <span class="ptp-mode-chip blue" id="ptpChipDrugs">— ชนิดยา</span>
@@ -2374,15 +2374,6 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4v-6H10v6H6v-9H3l9-8z"/></svg>
         หน้าหลัก
       </button>
-    </div>
-
-    <!-- Round filter chips — change round without going back to type page -->
-    <div class="ppw-round-chips" id="ppwRoundChips">
-      <button type="button" class="ppw-round-chip" data-round="all" onclick="setPpwRound('all')">ทุกรอบ</button>
-      <button type="button" class="ppw-round-chip" data-round="morning" onclick="setPpwRound('morning')">เช้า</button>
-      <button type="button" class="ppw-round-chip" data-round="noon" onclick="setPpwRound('noon')">กลางวัน</button>
-      <button type="button" class="ppw-round-chip" data-round="evening" onclick="setPpwRound('evening')">เย็น</button>
-      <button type="button" class="ppw-round-chip" data-round="bedtime" onclick="setPpwRound('bedtime')">ก่อนนอน</button>
     </div>
 
     <div class="dash-hero ppw-hero">
@@ -2678,6 +2669,7 @@
         <div class="scan-current-info">
           <div class="scan-drug-name" id="scanDrugName">—</div>
           <div class="scan-drug-dose" id="scanDrugDose">—</div>
+          <div class="scan-bag-context" id="scanBagContext" style="display:none;"></div>
           <div class="scan-location-row">
             <span class="scan-loc-chip">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="10" y1="10" x2="10" y2="20"/></svg>
@@ -3740,7 +3732,7 @@
           </button>
           <button type="button" class="da-btn da-btn-give" id="daBtnGive" onclick="daMarkGiven()" disabled>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            จ่ายแล้ว
+            <span id="daBtnGiveLabel">จ่ายแล้ว</span>
           </button>
         </div>
 
@@ -3784,12 +3776,12 @@
   <div class="da-2nd-modal" id="da2ndModal" hidden>
     <div class="da-2nd-modal-backdrop" onclick="daClose2ndModal()"></div>
     <div class="da-2nd-modal-card">
-      <div class="da-2nd-modal-badge">
+      <div class="da-2nd-modal-badge" id="da2ndBadge">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-        HIGH ALERT
+        <span id="da2ndBadgeLabel">HIGH ALERT</span>
       </div>
       <div class="da-2nd-modal-title">ยืนยันโดยพยาบาลคนที่ 2</div>
-      <div class="da-2nd-modal-sub">
+      <div class="da-2nd-modal-sub" id="da2ndSubText">
         ยา <b id="da2ndDrugName">—</b> เป็นยา High Alert<br>
         ให้พยาบาลคนที่ 2 สแกน Barcode บัตรพนักงานเพื่อยืนยันการให้ยา
       </div>

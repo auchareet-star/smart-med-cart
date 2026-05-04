@@ -5079,6 +5079,7 @@ body {
 .ppw-row-done .ppw-avatar { background: #d1fae5; color: #059669; }
 .ppw-row-done .ppw-badge { background: #d1fae5; color: #059669; }
 
+
 /* ── pg-scan-drug ─────────────────────────────────────────────── */
 .scan-body {
   max-width: 480px; margin: 0 auto;
@@ -5102,6 +5103,23 @@ body {
 .scan-current-info { flex: 1; min-width: 0; }
 .scan-drug-name { font-size: 16px; font-weight: 800; color: var(--text-1); }
 .scan-drug-dose { font-size: 12px; color: var(--text-2); font-weight: 500; margin-bottom: 6px; }
+.scan-bag-context {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 12px; margin: 0 0 8px;
+  background: linear-gradient(135deg,#eef2ff,#e0e7ff);
+  border: 1px solid #c7d2fe; border-radius: 10px;
+  font-size: 12px; color: #3730a3;
+}
+.scan-bag-context svg { flex-shrink: 0; color: #4f46e5; }
+.scan-bag-ctx-text { flex: 1; min-width: 0; }
+.scan-bag-ctx-text strong { color: #1e1b4b; font-weight: 700; }
+.scan-bag-ctx-chip {
+  padding: 2px 8px; border-radius: 6px;
+  font-size: 11px; font-weight: 700;
+  white-space: nowrap;
+}
+.scan-bag-ctx-round { background: #4f46e5; color: #fff; }
+.scan-bag-ctx-qty   { background: #fff; color: #4f46e5; border: 1px solid #c7d2fe; }
 .scan-location-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .scan-loc-chip {
   display: flex; align-items: center; gap: 4px;
@@ -5545,49 +5563,6 @@ body {
 .ppd-hero-drug-info { flex: 1; min-width: 0; }
 .ppd-hero-route-tag { font-size: 10px !important; padding: 3px 9px !important; }
 
-/* Indigo icon for right panel in patient mode */
-.dash-panel-icon-indigo {
-  background: linear-gradient(135deg,#eef2ff,#e0e7ff);
-  color: #4f46e5;
-}
-
-/* ── Patient mode: indigo/blue accent throughout ppd page ──── */
-.ppd-mode-patient .ppd-hero {
-  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 55%, #1d4ed8 100%);
-  box-shadow: 0 10px 28px rgba(79,70,229,.22);
-}
-.ppd-mode-patient .ppd-step.active .ppd-step-dot { background: #4f46e5; }
-.ppd-mode-patient .ppd-step.done  .ppd-step-dot  { background: #6366f1; }
-.ppd-mode-patient .ppd-step.active .ppd-step-lbl,
-.ppd-mode-patient .ppd-step.done  .ppd-step-lbl  { color: #4f46e5; }
-.ppd-mode-patient .ppd-step-fill          { background: rgba(99,102,241,.2); }
-.ppd-mode-patient .ppd-step-fill.done     { background: linear-gradient(90deg,#4f46e5,#6366f1); }
-.ppd-mode-patient .ppd-drawer-slot.selected {
-  border-color: #4f46e5; background: #eef2ff;
-  box-shadow: 0 0 0 3px rgba(79,70,229,.15), 0 4px 12px rgba(79,70,229,.15);
-}
-.ppd-mode-patient .ppd-drawer-slot.selected .ppd-drawer-slot-icon {
-  background: linear-gradient(135deg,#eef2ff,#e0e7ff); color: #4f46e5; border-color: #4f46e5;
-}
-.ppd-mode-patient .ppd-drawer-slot.selected .ppd-drawer-num   { color: #3730a3; }
-.ppd-mode-patient .ppd-drawer-slot.selected .ppd-drawer-label { color: #4f46e5; font-weight: 700; }
-.ppd-mode-patient .ppd-drawer-slot:hover { border-color: #818cf8; }
-.ppd-mode-patient .ppd-drawer-slot:hover .ppd-drawer-slot-icon { border-color: #818cf8; color: #6366f1; }
-.ppd-mode-patient .ppd-drawer-slot:hover .ppd-drawer-num  { color: #6366f1; }
-.ppd-mode-patient .ppd-cass-slot.selected {
-  background: linear-gradient(135deg,#eef2ff,#e0e7ff); border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79,70,229,.15), 0 4px 12px rgba(79,70,229,.12);
-}
-.ppd-mode-patient .ppd-cass-slot.selected::before {
-  background: linear-gradient(135deg,#4f46e5,#6366f1);
-}
-.ppd-mode-patient .ppd-cass-slot.selected .ppd-cass-num { color: #3730a3; }
-.ppd-mode-patient .ppd-cass-status-info[style*="accent"] {
-  background: #eef2ff !important; color: #4f46e5 !important;
-}
-.ppd-mode-patient .ptp-confirm-btn { background: linear-gradient(135deg,#4f46e5,#6366f1); }
-.ppd-mode-patient .ptp-confirm-btn:hover { background: linear-gradient(135deg,#4338ca,#4f46e5); }
-
 /* Step progress tracker */
 .ppd-steps {
   display: flex; align-items: center; gap: 0;
@@ -5753,6 +5728,20 @@ body {
   cursor: default; opacity: 0.75;
 }
 .ppd-cass-slot.done:hover { transform: none; box-shadow: none; }
+.ppd-cass-slot.locked-round {
+  border-color: #f59e0b; background: linear-gradient(160deg,#fffbeb,#fef3c7);
+  cursor: not-allowed; opacity: 0.85;
+}
+.ppd-cass-slot.locked-round:hover { transform: none; box-shadow: none; }
+.ppd-cass-slot.locked-round .ppd-cass-num { color: #b45309; }
+.ppd-cass-slot.locked-round .ppd-cass-done-label { color: #b45309; }
+.ppd-cass-locked-icon {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #f59e0b;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.35);
+}
 .ppd-cass-slot.needed {
   border-color: #16a34a; background: #f0fdf4; cursor: pointer;
 }
@@ -6946,6 +6935,9 @@ body {
   color: #9a3412; font-size: 11px; font-weight: 800;
   letter-spacing: .4px;
 }
+.da-2nd-modal-badge.da-2nd-badge-late {
+  background: #fef3c7; border-color: #f59e0b; color: #b45309;
+}
 .da-2nd-modal-title {
   font-size: 18px; font-weight: 800; color: #1f2937;
   letter-spacing: -.2px;
@@ -7034,6 +7026,15 @@ body {
 .da-btn-give:not(:disabled):hover {
   background: var(--accent-dk); transform: translateY(-1px);
   box-shadow: 0 5px 14px rgba(45,191,163,.4);
+}
+/* Late-dispense override — visually distinct from on-time dispense */
+.da-btn-give.da-btn-late {
+  background: linear-gradient(135deg,#f59e0b,#d97706);
+  box-shadow: 0 3px 10px rgba(245,158,11,.35);
+}
+.da-btn-give.da-btn-late:not(:disabled):hover {
+  background: linear-gradient(135deg,#d97706,#b45309);
+  box-shadow: 0 5px 14px rgba(245,158,11,.45);
 }
 
 /* ─── Sticky bottom confirm bar ─── */
