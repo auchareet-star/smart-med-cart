@@ -5154,6 +5154,8 @@ function saveNavState() {
   snap._ppdCassette      = _PPD_SELECTED_CASSETTE;
   snap._ppwDoneSet       = Array.from(_PPW_DONE_SET || []);
   snap._ppdDoneCassettes = Array.from(_PPD_DONE_CASSETTES || []);
+  snap._ppwDrugAssign    = _PPW_DRUG_ASSIGN || {};
+  snap._ppwDrugDone      = Array.from(_PPW_DRUG_DONE || []);
   try { sessionStorage.setItem('mc_nav', JSON.stringify(snap)); } catch {}
 }
 
@@ -5169,6 +5171,8 @@ function restoreNavState() {
     if (snap._ppdCassette != null) _PPD_SELECTED_CASSETTE = snap._ppdCassette;
     if (snap._ppwDoneSet)       _PPW_DONE_SET       = new Set(snap._ppwDoneSet);
     if (snap._ppdDoneCassettes) _PPD_DONE_CASSETTES = new Set(snap._ppdDoneCassettes);
+    if (snap._ppwDrugAssign)    _PPW_DRUG_ASSIGN    = snap._ppwDrugAssign;
+    if (snap._ppwDrugDone)      _PPW_DRUG_DONE      = new Set(snap._ppwDrugDone);
   } catch {}
 }
 
@@ -5414,6 +5418,10 @@ function initPrepType() {
 const _PPW_ROUND_MAP = { morning:'เช้า', noon:'กลางวัน', evening:'เย็น', bedtime:'ก่อนนอน' };
 var _PPW_DONE_SET = new Set();
 var _PPW_DETAIL = { type: null, id: null, orderIds: [] };
+// Per-session drug → cassette assignment (e.g., {'MET500': {drawerId:'D1', slot:1}})
+var _PPW_DRUG_ASSIGN = {};
+// Per-session set of drug IDs already scanned this prep session
+var _PPW_DRUG_DONE   = new Set();
 
 function initPrepWork() {
   if (location.hash.replace('#','') !== 'pg-prep-work') return;
@@ -5566,6 +5574,9 @@ function openPrepDetail(type, id, orderIdsStr) {
   _PPW_DETAIL.type     = type;
   _PPW_DETAIL.id       = id;
   _PPW_DETAIL.orderIds = orderIdsStr ? orderIdsStr.split(',') : [];
+  // Fresh prep session — clear per-drug tracking.
+  _PPW_DRUG_ASSIGN = {};
+  _PPW_DRUG_DONE   = new Set();
   location.hash = '#pg-prep-drawer';
 }
 
@@ -6001,6 +6012,13 @@ function confirmPrepDrawer() {
 }
 
 /* ── pg-scan-drug ─────────────────────────────────────────── */
+// Unique key per queue item so multiple drugs sharing the same cassette slot
+// can each be scanned independently.
+function _scanItemKey(item) {
+  if (!item || item.noCassette || !item.drawerId) return null;
+  var drugId = (item.drug && item.drug.id) || '';
+  return item.drawerId + ':' + item.slot + ':' + drugId;
+}
 var _scanQueue   = [];  // [{ drawerId, slot, drug }]
 var _scanIndex   = 0;
 var _scanDoneSet = new Set(); // 'D1:3' keys scanned this session
@@ -6032,72 +6050,60 @@ function initScanDrug() {
   _scanQueue = [];
   _scanDoneSet = new Set(); // reset each time page loads
 
-  // The user picks a starting cassette in pg-prep-drawer. Use it for the FIRST drug needed:
-  //   - If the cassette already holds one of the needed drugs → refill that drug here.
-  //   - Else, allocate the first un-loaded drug to this empty cassette.
-  // This makes the chosen slot light up first (matches user's intent on the Drawer Map).
-  var selectedDrugId = null;
-  var taken = new Set();
-  if (_PPD_SELECTED_DRAWER && _PPD_SELECTED_CASSETTE) {
-    var selCass = cassettes.find(function(c) {
-      return c.drawerId === _PPD_SELECTED_DRAWER && c.slotNumber === _PPD_SELECTED_CASSETTE;
-    });
-    if (selCass) {
-      var pickDrugId = (selCass.drugId && neededDrugIds.indexOf(selCass.drugId) !== -1)
-        ? selCass.drugId                      // refill — slot already holds a needed drug
-        : (!selCass.drugId ? neededDrugIds[0] : null);  // empty — load first needed drug
-      if (pickDrugId) {
-        selectedDrugId = pickDrugId;
-        _scanQueue.push({
-          drawerId: selCass.drawerId,
-          slot: selCass.slotNumber,
-          drug: drugMap[pickDrugId] || { name: pickDrugId, dose: '', type: 'oral' },
-          noCassette: false
-        });
-        taken.add(_PPD_SELECTED_DRAWER + ':' + _PPD_SELECTED_CASSETTE);
-      }
-    }
-  }
-
-  // Remaining drugs: prefer same drawer as selected, then any drawer
-  var preferDrawer = _PPD_SELECTED_DRAWER || null;
+  // Per-session, one drug at a time:
+  //   - drugs in _PPW_DRUG_DONE are already scanned (show ✓)
+  //   - drugs in _PPW_DRUG_ASSIGN keep their previously chosen cassette
+  //   - the FIRST undone drug gets the cassette user just picked in pg-prep-drawer
+  //   - remaining undone drugs are placeholders ("รอเลือก Cassette")
+  var assignedThisRound = false;
   neededDrugIds.forEach(function(drugId) {
-    if (drugId === selectedDrugId) return;
-    var key = function(c) { return c.drawerId + ':' + c.slotNumber; };
-
-    // 1) Existing cassette already loaded with this drug (refill pattern)
-    var cass = preferDrawer ? cassettes.find(function(c) {
-      return c.status === 'IN' && c.drugId === drugId && c.drawerId === preferDrawer && !taken.has(key(c));
-    }) : null;
-    if (!cass) {
-      cass = cassettes.find(function(c) {
-        return c.status === 'IN' && c.drugId === drugId && !taken.has(key(c));
+    var existing = _PPW_DRUG_ASSIGN[drugId];
+    if (existing) {
+      _scanQueue.push({
+        drawerId: existing.drawerId,
+        slot:     existing.slot,
+        drug:     drugMap[drugId] || { name: drugId, dose: '', type: 'oral' },
+        noCassette: false
       });
+      // Restore done state for already-scanned drugs
+      if (_PPW_DRUG_DONE.has(drugId)) {
+        _scanDoneSet.add(_scanItemKey(_scanQueue[_scanQueue.length - 1]));
+      }
+      return;
     }
 
-    // 2) Allocate an EMPTY cassette to load this drug (dynamic prep — no pre-stocking required)
-    if (!cass) {
-      cass = preferDrawer ? cassettes.find(function(c) {
-        return c.status === 'IN' && !c.drugId && c.drawerId === preferDrawer && !taken.has(key(c));
-      }) : null;
-      if (!cass) {
-        cass = cassettes.find(function(c) {
-          return c.status === 'IN' && !c.drugId && !taken.has(key(c));
-        });
-      }
+    // No existing assignment — give this drug the cassette user just picked (only first undone).
+    if (!assignedThisRound && _PPD_SELECTED_DRAWER && _PPD_SELECTED_CASSETTE) {
+      _PPW_DRUG_ASSIGN[drugId] = {
+        drawerId: _PPD_SELECTED_DRAWER,
+        slot:     _PPD_SELECTED_CASSETTE
+      };
+      _scanQueue.push({
+        drawerId: _PPD_SELECTED_DRAWER,
+        slot:     _PPD_SELECTED_CASSETTE,
+        drug:     drugMap[drugId] || { name: drugId, dose: '', type: 'oral' },
+        noCassette: false
+      });
+      assignedThisRound = true;
+      return;
     }
-    if (cass) taken.add(key(cass));
+
+    // Placeholder: undone drug awaiting cassette pick from pg-prep-drawer.
     _scanQueue.push({
-      drawerId: cass ? cass.drawerId : null,
-      slot:     cass ? cass.slotNumber : null,
+      drawerId: null,
+      slot:     null,
       drug:     drugMap[drugId] || { name: drugId, dose: '', type: 'oral' },
-      noCassette: !cass
+      noCassette: true,
+      pendingPick: true
     });
   });
 
-  // Start from first unscanned item
+  // Start from first item that is assigned a cassette and not yet scanned.
+  // (skip done items AND pending-pick placeholders)
   _scanIndex = 0;
-  while (_scanIndex < _scanQueue.length && _scanDoneSet.has(_scanQueue[_scanIndex].drawerId + ':' + _scanQueue[_scanIndex].slot)) {
+  while (_scanIndex < _scanQueue.length) {
+    var _it = _scanQueue[_scanIndex];
+    if (!_it.noCassette && !_scanDoneSet.has(_scanItemKey(_it))) break;
     _scanIndex++;
   }
 
@@ -6201,14 +6207,48 @@ function _renderScanCurrent() {
     var card     = document.getElementById('scanSuccessCard');
 
     var actualScanned   = _scanDoneSet.size;
-    var noCassetteCount = _scanQueue.filter(function(i) { return i.noCassette; }).length;
-    var allFailed       = actualScanned === 0 && _scanQueue.length > 0;
+    // Only count true "not in cart" failures (exclude pendingPick placeholders waiting for user pick)
+    var noCassetteCount = _scanQueue.filter(function(i) { return i.noCassette && !i.pendingPick; }).length;
+    var allFailed       = actualScanned === 0 && _scanQueue.length > 0
+                          && _scanQueue.every(function(i) { return i.noCassette && !i.pendingPick; });
     var partialFailed   = actualScanned > 0 && noCassetteCount > 0;
 
     // 5 Rights check — only show when at least one scan succeeded
     var rightsList   = document.getElementById('scanRightsList');
     var btnDash      = document.getElementById('scanSuccessBtnDash');
     var btnNext      = document.getElementById('scanSuccessBtnNext');
+
+    // Check if more drugs in this prep session still need a cassette pick.
+    var pendingPickCount = _scanQueue.filter(function(i) { return i.pendingPick; }).length;
+    var hasMoreDrugs = pendingPickCount > 0;
+    var arrowSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+
+    if (hasMoreDrugs) {
+      // After-scan choice: stay on same cassette OR pick a different one for next drug.
+      var nextItem = _scanQueue.find(function(it) { return it.pendingPick; });
+      var nextName = (nextItem && nextItem.drug && nextItem.drug.name) ? nextItem.drug.name : 'ยาตัวถัดไป';
+
+      if (btnDash) {
+        btnDash.innerHTML = 'ใส่ Cassette อื่น' + arrowSvg;
+        btnDash.setAttribute('onclick', 'finishScanNextDrug()');
+      }
+      if (btnNext) {
+        btnNext.innerHTML = 'ใส่ ' + nextName + ' ที่นี่' + arrowSvg;
+        btnNext.setAttribute('onclick', 'finishScanSameCassette()');
+      }
+    } else {
+      // All drugs done: confirm and go back, or jump to dashboard.
+      if (btnDash) {
+        btnDash.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>'
+          + 'ไป Dashboard';
+        btnDash.setAttribute('onclick', 'finishScanGoDashboard()');
+      }
+      if (btnNext) {
+        btnNext.innerHTML = 'ยืนยันและจัดยาต่อ' + arrowSvg;
+        btnNext.setAttribute('onclick', 'finishScanContinue()');
+      }
+    }
+
     if (allFailed) {
       // No drugs scanned — skip 5-rights, allow user to navigate away immediately
       if (rightsList) rightsList.style.display = 'none';
@@ -6247,7 +6287,7 @@ function _renderScanCurrent() {
       var scannedQty = 0;
       _scanQueue.forEach(function(it) {
         if (it.noCassette) return;
-        var key = it.drawerId + ':' + it.slot;
+        var key = _scanItemKey(it);
         if (!_scanDoneSet.has(key)) return;
         // count orders matching this drug
         var matchingOrders = allOrders.filter(function(o) { return o.drugId === (it.drug && it.drug.id); });
@@ -6342,20 +6382,26 @@ function _renderScanQueue() {
 
     html += '<div class="scan-ql-head">รายการยาที่ต้องจัด</div>';
     _scanQueue.forEach(function(item, i) {
-      var key      = item.noCassette ? null : (item.drawerId + ':' + item.slot);
+      var key      = _scanItemKey(item);
       var done     = key && _scanDoneSet.has(key);
       var isCurr   = (i === _scanIndex);
-      var loc      = item.noCassette ? 'ไม่มีใน Cassette' : ('ลิ้นชัก ' + item.drawerId.replace('D','') + ' · Cassette ' + item.slot);
+      var pending  = item.pendingPick;
+      var loc      = pending ? 'รอเลือก Cassette'
+                  : item.noCassette ? 'ไม่มีใน Cassette'
+                  : ('ลิ้นชัก ' + item.drawerId.replace('D','') + ' · Cassette ' + item.slot);
 
-      var stateClass = item.noCassette ? ' ql-warn' : (done ? ' ql-done' : (isCurr ? ' ql-active' : ''));
-      var iconHtml = item.noCassette
-        ? svgWarn
-        : (done
-            ? svgCheck
-            : (isCurr
-                ? svgScan
-                : '<span class="scan-ql-dot"></span>'));
-      var badge = item.noCassette ? '<span class="scan-ql-badge warn">ไม่มีในรถ</span>'
+      var stateClass = pending ? '' : (item.noCassette ? ' ql-warn' : (done ? ' ql-done' : (isCurr ? ' ql-active' : '')));
+      var iconHtml = pending
+        ? '<span class="scan-ql-dot"></span>'
+        : (item.noCassette
+            ? svgWarn
+            : (done
+                ? svgCheck
+                : (isCurr
+                    ? svgScan
+                    : '<span class="scan-ql-dot"></span>')));
+      var badge = pending ? '<span class="scan-ql-badge">รอเลือก Cassette</span>'
+        : item.noCassette ? '<span class="scan-ql-badge warn">ไม่มีในรถ</span>'
         : (done    ? '<span class="scan-ql-badge done">แสกนแล้ว</span>'
         : (isCurr  ? '<span class="scan-ql-badge active">กำลังแสกน</span>'
                    : '<span class="scan-ql-badge">รอ</span>'));
@@ -6374,7 +6420,7 @@ function _renderScanQueue() {
     // ─── Drug mode: remaining queue (usually empty for single-drug prep) ───
     _scanQueue.forEach(function(item, i) {
       if (i === _scanIndex) return;
-      var key   = item.noCassette ? null : (item.drawerId + ':' + item.slot);
+      var key   = _scanItemKey(item);
       var done  = key && _scanDoneSet.has(key);
       var icon  = item.noCassette ? svgWarn : (done ? svgCheck : svgPill);
       var loc   = item.noCassette ? 'ไม่มีใน Cassette' : ('ลิ้นชัก ' + item.drawerId.replace('D','') + ' · Cassette ' + item.slot);
@@ -6476,7 +6522,7 @@ function _renderScanPatients(item) {
     var unit     = isIV ? 'ถุง' : 'เม็ด';
     // Find queue item for this drug to check scan status
     var qItem    = (_scanQueue || []).find(function(q) { return q.drug && (q.drug.id === o.drugId || q.drug.name === d.name); });
-    var scanned  = qItem && qItem.drawerId && _scanDoneSet.has(qItem.drawerId + ':' + qItem.slot);
+    var scanned  = qItem && qItem.drawerId && _scanDoneSet.has(_scanItemKey(qItem));
     var statusCls = scanned ? ' done' : '';
     var statusIco = scanned
       ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
@@ -6492,7 +6538,7 @@ function _renderScanPatients(item) {
   }).join('');
 
   var doneCount = (_scanQueue || []).filter(function(q) {
-    return q.drawerId && _scanDoneSet.has(q.drawerId + ':' + q.slot);
+    return q.drawerId && _scanDoneSet.has(_scanItemKey(q));
   }).length;
 
   panelEl.innerHTML =
@@ -6524,7 +6570,8 @@ function simulateScan() {
     return;
   }
 
-  var key = item.drawerId + ':' + item.slot;
+  var key      = _scanItemKey(item);                 // unique per drug+slot for scan tracking
+  var cassKey  = item.drawerId + ':' + item.slot;    // drawer:slot for cassette-level tracking
   if (_scanDoneSet.has(key)) return;
 
   // High-alert drug → require 2-witness scan BEFORE loading into cassette.
@@ -6536,7 +6583,8 @@ function simulateScan() {
   }
 
   _scanDoneSet.add(key);
-  _PPD_DONE_CASSETTES.add(key);
+  _PPD_DONE_CASSETTES.add(cassKey);
+  if (item.drug && item.drug.id) _PPW_DRUG_DONE.add(item.drug.id);
 
   // Load the scanned drug into the cassette so dispense flow can find it.
   // - Empty cassette: set drugId, init quantity from drug.max (or qty needed)
@@ -6585,7 +6633,9 @@ function simulateScan() {
   // Move to next after short delay
   setTimeout(function() {
     _scanIndex++;
-    while (_scanIndex < _scanQueue.length && _scanDoneSet.has(_scanQueue[_scanIndex].drawerId + ':' + _scanQueue[_scanIndex].slot)) {
+    while (_scanIndex < _scanQueue.length) {
+      var __it = _scanQueue[_scanIndex];
+      if (!__it.noCassette && !_scanDoneSet.has(_scanItemKey(__it))) break;
       _scanIndex++;
     }
     _renderScanCurrent();
@@ -6696,6 +6746,8 @@ function finishScanContinue() {
   var id   = _PPW_DETAIL.id;
   if (type && id) _PPW_DONE_SET.add(type + ':' + id);
   _scanDoneSet = new Set();
+  _PPW_DRUG_ASSIGN = {};
+  _PPW_DRUG_DONE   = new Set();
   _resetRightsCheck();
   location.hash = '#pg-prep-work';
 }
@@ -6705,8 +6757,39 @@ function finishScanGoDashboard() {
   var id   = _PPW_DETAIL.id;
   if (type && id) _PPW_DONE_SET.add(type + ':' + id);
   _scanDoneSet = new Set();
+  _PPW_DRUG_ASSIGN = {};
+  _PPW_DRUG_DONE   = new Set();
   _resetRightsCheck();
   location.hash = '#pg-dashboard';
+}
+
+// Continue prepping the SAME patient/drug session — pick a new cassette for the next drug.
+// Keeps _PPW_DRUG_ASSIGN and _PPW_DRUG_DONE so the next visit to pg-scan-drug knows what's done.
+function finishScanNextDrug() {
+  _resetRightsCheck();
+  location.hash = '#pg-prep-drawer';
+}
+
+// Continue prepping the SAME patient — assign next undone drug to the SAME selected cassette,
+// then re-render pg-scan-drug so the next drug becomes the active scan target.
+function finishScanSameCassette() {
+  if (!_PPD_SELECTED_DRAWER || !_PPD_SELECTED_CASSETTE) {
+    // Fallback: no remembered cassette, send user back to pick one
+    return finishScanNextDrug();
+  }
+  // Find the next pending-pick drug and pin it to the same cassette
+  var next = _scanQueue.find(function(it) { return it.pendingPick; });
+  if (next && next.drug && next.drug.id) {
+    _PPW_DRUG_ASSIGN[next.drug.id] = {
+      drawerId: _PPD_SELECTED_DRAWER,
+      slot:     _PPD_SELECTED_CASSETTE
+    };
+  }
+  _resetRightsCheck();
+  // Hide success card, rebuild queue with the new assignment.
+  var successCard = document.getElementById('scanSuccessCard');
+  if (successCard) successCard.hidden = true;
+  initScanDrug();
 }
 
 /* ─── 5 Rights check (inline at end of scan flow) ────────── */
